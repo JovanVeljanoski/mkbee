@@ -380,7 +380,7 @@ https://pcelka.mk`;
 
            {/* Side View Bee Icon */}
            <div className="w-28 h-28 md:w-36 md:h-36 relative mb-2">
-             <img src="/bee.svg" alt="Bee" className="w-full h-full drop-shadow-sm" />
+             <img src={`${import.meta.env.BASE_URL}bee.svg`} alt="Bee" className="w-full h-full drop-shadow-sm" />
            </div>
 
            <h1 className="text-4xl md:text-5xl font-bold tracking-tight font-slab text-black">

@@ -87,7 +87,7 @@ async function fetchAndDecompressDictionary(): Promise<string[]> {
   if (typeof DecompressionStream !== 'undefined') {
     try {
       console.log('📥 Fetching dictionary from network (Gzip)...');
-      const gzipResponse = await fetch('/data/mk_words.json.gz');
+      const gzipResponse = await fetch(`${import.meta.env.BASE_URL}data/mk_words.json.gz`);
 
       if (gzipResponse.ok && gzipResponse.body) {
         const ds = new DecompressionStream('gzip');
@@ -103,7 +103,7 @@ async function fetchAndDecompressDictionary(): Promise<string[]> {
   // 2. Fallback to uncompressed
   try {
     console.log('📥 Fetching dictionary from network (JSON)...');
-    const response = await fetch('/data/mk_words.json');
+    const response = await fetch(`${import.meta.env.BASE_URL}data/mk_words.json`);
     if (!response.ok) {
         throw new Error(`Failed to load dictionary: ${response.statusText}`);
     }
