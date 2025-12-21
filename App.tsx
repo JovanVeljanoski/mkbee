@@ -184,7 +184,7 @@ const App: React.FC = () => {
   };
 
   const handleSubmit = useCallback(() => {
-    if (!puzzle) return;
+    if (!puzzle || !input) return;
 
     const currentInput = input.toUpperCase();
     const puzzleLetters = [puzzle.centerLetter, ...puzzle.outerLetters];
@@ -543,7 +543,8 @@ https://pcelka.mk`;
 
             <button
               onClick={handleSubmit}
-              className="px-6 py-3 border-2 border-gray-200 rounded-full font-bold text-sm text-gray-800 hover:bg-gray-50 active:scale-95 transition-all w-28 text-center"
+              disabled={!input}
+              className="px-6 py-3 border-2 border-gray-200 rounded-full font-bold text-sm text-gray-800 hover:bg-gray-50 active:scale-95 transition-all w-28 text-center disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
             >
               Внеси
             </button>
