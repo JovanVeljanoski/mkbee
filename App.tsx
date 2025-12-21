@@ -243,6 +243,31 @@ const App: React.FC = () => {
     }
   }, [puzzle, input, foundWords]);
 
+  const copyToClipboard = async (text: string) => {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } else {
+      // Fallback for non-secure contexts (http) or older browsers
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
+      textArea.style.top = "0";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        return successful;
+      } catch {
+        document.body.removeChild(textArea);
+        return false;
+      }
+    }
+  };
+
   const handleShare = async () => {
     if (!puzzle) return;
 
@@ -269,21 +294,17 @@ https://pcelka.mk`;
       } catch (err) {
         // If user cancelled, do nothing. If error, try clipboard.
         if ((err as Error).name !== 'AbortError') {
-          try {
-            await navigator.clipboard.writeText(shareText);
+          const success = await copyToClipboard(shareText);
+          if (success) {
             showToast("Резултатот е ископиран", false, 2000);
-          } catch (clipboardErr) {
-            // quiet fail or show error
-            console.error(clipboardErr);
           }
         }
       }
     } else {
-      try {
-        await navigator.clipboard.writeText(shareText);
+      const success = await copyToClipboard(shareText);
+      if (success) {
         showToast("Резултатот е ископиран", false, 2000);
-      } catch (err) {
-        console.error(err);
+      } else {
         showToast("Неуспешно копирање", true);
       }
     }
