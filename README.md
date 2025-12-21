@@ -41,7 +41,7 @@ npm run lint
 
 # Dictionary
 
-The Macedonian dictionary used in this app has been sourced from [placeholder]. It is processed and filtered to provide a high-quality word list suitable for the game.
+The Macedonian dictionary used in this app has been sourced from [here](https://github.com/streetsidesoftware/cspell-dicts/tree/main/dictionaries/mk). It is processed and filtered to provide a high-quality word list suitable for the game.
 
 # Contributing
 
