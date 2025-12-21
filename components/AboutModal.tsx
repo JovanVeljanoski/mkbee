@@ -82,7 +82,7 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
           </p>
 
           <p className="leading-relaxed">
-            Кодот на оваа игра е јавен и може да го видите <a href="placeholder" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline font-semibold hover:text-blue-800">овде</a>.
+            Кодот на оваа игра е јавен и може да го видите <a href="https://github.com/JovanVeljanoski/mkbee" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline font-semibold hover:text-blue-800">овде</a>.
           </p>
 
           {/* New Marketing Section - Simplified */}

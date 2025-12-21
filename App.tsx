@@ -403,7 +403,7 @@ https://pcelka.mk`;
              <p className="font-extrabold text-lg text-black">
                {getFormattedDate()}
              </p>
-             <p className="text-sm font-bold text-black">Edited by GEMINI-3-PRO</p>
+             <p className="text-sm font-bold text-black">Едитор: Јован</p>
            </div>
         </div>
       </div>
