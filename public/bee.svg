@@ -1,0 +1,23 @@
+<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Wings -->
+  <path d="M 52 42 C 32 12, 12 32, 52 42" fill="white" stroke="black" stroke-width="3" stroke-linejoin="round" />
+  <path d="M 52 42 C 72 12, 92 32, 52 42" fill="white" stroke="black" stroke-width="3" stroke-linejoin="round" />
+
+  <!-- Stinger -->
+  <path d="M12 55 L 25 50 L 25 60 Z" fill="black" />
+
+  <!-- Body -->
+  <rect x="25" y="40" width="55" height="35" rx="18" ry="18" fill="#f7da21" stroke="black" stroke-width="3" />
+
+  <!-- Stripes -->
+  <path d="M42 40 L 42 75" stroke="black" stroke-width="3" fill="none"/>
+  <path d="M60 40 L 60 75" stroke="black" stroke-width="3" fill="none"/>
+
+  <!-- Face -->
+  <circle cx="70" cy="52" r="2.5" fill="black" />
+  <path d="M72 62 Q 76 65 80 60" stroke="black" stroke-width="2.5" fill="none" stroke-linecap="round" />
+
+  <!-- Antennae -->
+  <path d="M72 42 Q 82 25 88 30" stroke="black" stroke-width="2.5" fill="none" stroke-linecap="round" />
+  <circle cx="88" cy="30" r="2" fill="black" />
+</svg>

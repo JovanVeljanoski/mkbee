@@ -1,0 +1,9 @@
+name: mkbee
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - nodejs
+  - pandas
+  - brotli-python
+
