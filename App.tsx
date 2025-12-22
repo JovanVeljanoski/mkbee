@@ -441,10 +441,10 @@ https://pcelka.mk`;
   }
 
   return (
-    <div className="flex flex-col md:flex-row h-screen max-w-6xl mx-auto md:px-6 select-none overflow-hidden bg-white">
+    <div className="flex flex-col md:flex-row h-[100dvh] max-w-6xl mx-auto md:px-6 select-none overflow-hidden bg-white">
 
       {/* Left Column: Game Area */}
-      <div className="flex-1 flex flex-col px-4 py-2 md:py-6 h-full overflow-y-auto overflow-x-hidden md:border-r md:border-gray-100 md:pr-8">
+      <div className="flex-1 flex flex-col px-4 py-2 md:py-6 h-full overflow-hidden md:overflow-y-auto overflow-x-hidden touch-none md:border-r md:border-gray-100 md:pr-8">
         <header className="flex justify-between items-center mb-2 md:mb-6 border-b pb-2 md:pb-4">
           <div className="flex flex-col">
             <h1 className="text-2xl md:text-3xl font-slab font-bold tracking-tight text-gray-900">Македонска пчелка</h1>
