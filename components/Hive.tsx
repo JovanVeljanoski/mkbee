@@ -7,9 +7,10 @@ interface HiveProps {
   outerLetters: string[];
   onLetterClick: (letter: string) => void;
   isShuffling?: boolean;
+  disabled?: boolean;
 }
 
-const Hive: React.FC<HiveProps> = ({ centerLetter, outerLetters, onLetterClick, isShuffling }) => {
+const Hive: React.FC<HiveProps> = ({ centerLetter, outerLetters, onLetterClick, isShuffling, disabled }) => {
   // Constants for Flat Topped Hexagon layout
   const hexHeight = 87;
   const gap = 6;
@@ -34,7 +35,7 @@ const Hive: React.FC<HiveProps> = ({ centerLetter, outerLetters, onLetterClick, 
 
         {/* Center Hexagon */}
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
-          <Hexagon letter={centerLetter} isCenter onClick={onLetterClick} />
+          <Hexagon letter={centerLetter} isCenter onClick={onLetterClick} disabled={disabled} />
         </div>
 
         {/* Outer Hexagons */}
@@ -48,7 +49,7 @@ const Hive: React.FC<HiveProps> = ({ centerLetter, outerLetters, onLetterClick, 
                 transform: `translate(calc(-50% + ${pos.x}px), calc(-50% + ${pos.y}px))`
               }}
             >
-              <Hexagon letter={letter} onClick={onLetterClick} isShuffling={isShuffling} />
+              <Hexagon letter={letter} onClick={onLetterClick} isShuffling={isShuffling} disabled={disabled} />
             </div>
           );
         })}

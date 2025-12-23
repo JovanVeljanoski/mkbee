@@ -6,15 +6,12 @@ import { calculateRank } from '../services/puzzleService';
 interface ScoreBoardProps {
   score: number;
   totalPossibleScore: number;
-  wordsFound: number;
-  totalWords: number;
 }
 
-const ScoreBoard: React.FC<ScoreBoardProps> = ({ score, totalPossibleScore, wordsFound, totalWords }) => {
+const ScoreBoard: React.FC<ScoreBoardProps> = ({ score, totalPossibleScore }) => {
   // Use a fallback for totalPossibleScore to avoid division by zero during init
   const safeTotal = totalPossibleScore || 100;
   const percentage = Math.min((score / safeTotal) * 100, 100);
-  const [showTooltip, setShowTooltip] = useState<boolean>(false);
   const [showNextLevelTooltip, setShowNextLevelTooltip] = useState<boolean>(false);
 
   // Use shared logic for current rank
@@ -73,28 +70,12 @@ const ScoreBoard: React.FC<ScoreBoardProps> = ({ score, totalPossibleScore, word
         </div>
       </div>
 
-      {/* Progress Bar Container - Handles Tooltip Events */}
-      <div
-        className="relative w-full group"
-        onMouseEnter={() => setShowTooltip(true)}
-        onMouseLeave={() => setShowTooltip(false)}
-        onTouchStart={() => setShowTooltip(true)}
-        onTouchEnd={() => window.setTimeout(() => setShowTooltip(false), 2000)}
-      >
-        {/* Actual Progress Bar with Overflow Hidden */}
-        <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden shadow-inner">
-          <div
-            className="h-full bg-yellow-400 transition-all duration-700 ease-out"
-            style={{ width: `${percentage}%` }}
-          />
-        </div>
-
-        {/* Tooltip - Now outside overflow-hidden */}
-        {showTooltip && (
-          <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-black text-white px-3 py-1 rounded text-sm font-bold whitespace-nowrap z-20 shadow-lg after:content-[''] after:absolute after:top-full after:left-1/2 after:-translate-x-1/2 after:border-4 after:border-transparent after:border-t-black">
-            Пронајдени зборови {wordsFound} / {totalWords}
-          </div>
-        )}
+      {/* Progress Bar */}
+      <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden shadow-inner">
+        <div
+          className="h-full bg-yellow-400 transition-all duration-700 ease-out"
+          style={{ width: `${percentage}%` }}
+        />
       </div>
     </div>
   );

@@ -17,7 +17,15 @@ import StatsModal from './components/StatsModal';
 import AboutModal from './components/AboutModal';
 import CelebrationConfetti from './components/CelebrationConfetti';
 import FoundWordsList from './components/FoundWordsList';
+import GameTimer from './components/GameTimer';
 import { MACEDONIAN_ALPHABET } from './constants';
+
+const GAME_DURATION = 60; // seconds (1:00) - time is added when scoring points
+const MAX_WORDS_FOR_SCORING = 55; // Cap word count for scoring/ranking calculations
+const CELEBRATION_DURATION_MS = 4000;
+const TOAST_DURATION_MS = 1500;
+const TIME_BONUS_ANIMATION_DURATION_MS = 1000;
+
 
 const App: React.FC = () => {
   const [puzzle, setPuzzle] = useState<PuzzleData | null>(null);
@@ -40,7 +48,17 @@ const App: React.FC = () => {
   const [showCelebration, setShowCelebration] = useState<boolean>(false);
   const [totalPossibleScore, setTotalPossibleScore] = useState<number>(0);
 
+  // Timer state
+  const [timeLeft, setTimeLeft] = useState<number>(GAME_DURATION);
+  const [isGameOver, setIsGameOver] = useState<boolean>(false);
+  const [hasTimerStarted, setHasTimerStarted] = useState<boolean>(false);
+  const [timeBonus, setTimeBonus] = useState<number | null>(null); // For "+X" animation
+
+  // Next puzzle countdown state (initialized with a placeholder, updated by effect)
+  const [nextPuzzleCountdown, setNextPuzzleCountdown] = useState<string>('--:--:--');
+
   const totalPossibleScoreRef = useRef(0);
+  const hasShownCelebrationRef = useRef(false);
 
   const initGame = async () => {
     setIsLoading(true);
@@ -51,16 +69,23 @@ const App: React.FC = () => {
       // 2. Generate Puzzle using dictionary
       const data = await getDailyPuzzle(dictionary);
 
-      // 3. Setup Max Score for progress bar
-      let max = 0;
+      // 3. Setup Max Score for progress bar (capped at MAX_WORDS_FOR_SCORING words)
+      let totalRawScore = 0;
       data.validWords.forEach(word => {
-        if (word.length === 4) max += 1;
-        else if (word.length > 4) max += word.length;
-        if (data.pangrams.includes(word)) max += 7;
+        if (word.length === 4) totalRawScore += 1;
+        else if (word.length > 4) totalRawScore += word.length;
+        if (data.pangrams.includes(word)) totalRawScore += 7;
       });
+
+      // Calculate capped max score: avgScore * min(55, totalWords)
+      const totalWords = data.validWords.length;
+      const avgScorePerWord = totalRawScore / totalWords;
+      const cappedWords = Math.min(MAX_WORDS_FOR_SCORING, totalWords);
+      const cappedMaxScore = Math.round(cappedWords * avgScorePerWord);
+
       // Store in state to trigger re-renders properly (ref access in render is bad practice)
-      setTotalPossibleScore(max);
-      totalPossibleScoreRef.current = max;
+      setTotalPossibleScore(cappedMaxScore);
+      totalPossibleScoreRef.current = cappedMaxScore;
 
       // 4. Check for saved daily progress
       const todayStr = new Intl.DateTimeFormat('en-CA', {
@@ -81,16 +106,49 @@ const App: React.FC = () => {
              // Restore progress
              setFoundWords(savedProgress.foundWords);
              setScore(savedProgress.score);
+
+             // Restore timer state with validation
+             const hasCompleteTimerState =
+               typeof savedProgress.timeLeft === 'number' &&
+               typeof savedProgress.isGameOver === 'boolean' &&
+               typeof savedProgress.hasTimerStarted === 'boolean';
+
+             if (hasCompleteTimerState) {
+               setTimeLeft(Math.max(0, savedProgress.timeLeft));
+               setIsGameOver(savedProgress.isGameOver);
+               setHasTimerStarted(savedProgress.hasTimerStarted);
+             } else {
+               // Migration or inconsistent timer data: start a fresh timer
+               setTimeLeft(GAME_DURATION);
+               setIsGameOver(false);
+               setHasTimerStarted(false);
+             }
              // We don't restore input
 
            } else {
              console.warn("Saved progress mismatch with generated puzzle. Resetting.");
              clearDailyProgress();
+             // Reset timer for new puzzle
+             setTimeLeft(GAME_DURATION);
+             setIsGameOver(false);
+             setHasTimerStarted(false);
+             hasShownCelebrationRef.current = false;
            }
         } else {
            // New Day!
            clearDailyProgress();
+           // Reset timer for new day
+           setTimeLeft(GAME_DURATION);
+           setIsGameOver(false);
+           setHasTimerStarted(false);
+           hasShownCelebrationRef.current = false;
         }
+      } else {
+        // No saved progress - fresh start
+        setTimeLeft(GAME_DURATION);
+        setIsGameOver(false);
+        setHasTimerStarted(false);
+        hasShownCelebrationRef.current = false;
       }
 
       setPuzzle(data);
@@ -116,7 +174,8 @@ const App: React.FC = () => {
 
   // Save progress and update stats whenever important state changes
   useEffect(() => {
-    if (!puzzle || foundWords.length === 0) return;
+    if (!puzzle) return;
+    // Save even if no words found (to persist timer state)
 
     const todayStr = new Intl.DateTimeFormat('en-CA', {
         timeZone: 'Europe/Amsterdam',
@@ -130,23 +189,143 @@ const App: React.FC = () => {
         foundWords,
         score,
         centerLetter: puzzle.centerLetter,
-        outerLetters: puzzle.outerLetters
+        outerLetters: puzzle.outerLetters,
+        timeLeft,
+        isGameOver,
+        hasTimerStarted
     });
 
-    // Update Stats
-    const currentRank = calculateRank(score, totalPossibleScoreRef.current);
-    const pangramsCount = foundWords.filter(w => puzzle.pangrams.includes(w)).length;
+    // Update Stats only if we have found words
+    if (foundWords.length > 0) {
+      const currentRank = calculateRank(score, totalPossibleScoreRef.current);
+      const pangramsCount = foundWords.filter(w => puzzle.pangrams.includes(w)).length;
 
-    const newStats = updateStatsWithDailyGame(
-        todayStr,
-        score,
-        currentRank,
-        foundWords.length,
-        pangramsCount
-    );
-    setStats(newStats);
+      const newStats = updateStatsWithDailyGame(
+          todayStr,
+          score,
+          currentRank,
+          foundWords.length,
+          pangramsCount
+      );
+      setStats(newStats);
+    } else if (isGameOver) {
+      // Also update stats if game is over but score is 0 (to record game played)
+       const currentRank = calculateRank(score, totalPossibleScoreRef.current);
+       const newStats = updateStatsWithDailyGame(
+           todayStr,
+           score,
+           currentRank,
+           0,
+           0
+       );
+       setStats(newStats);
+    }
 
-  }, [foundWords, score, puzzle]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [foundWords, score, puzzle, isGameOver, hasTimerStarted]);
+
+  // Timer countdown effect
+  useEffect(() => {
+    // Only run timer when:
+    // - Game has started (clicked Play)
+    // - Timer has started (first word entered)
+    // - Game is not over
+    // - About modal is not open (pause when viewing rules)
+    if (!hasStarted || !hasTimerStarted || isGameOver || isAboutOpen) return;
+
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          // Time's up!
+          setIsGameOver(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [hasStarted, hasTimerStarted, isGameOver, isAboutOpen]);
+
+  // Cleanup time bonus animation
+  useEffect(() => {
+    if (timeBonus === null) return;
+    const timer = setTimeout(() => setTimeBonus(null), TIME_BONUS_ANIMATION_DURATION_MS);
+    return () => clearTimeout(timer);
+  }, [timeBonus]);
+
+  // Handle game over - show celebration if max score reached, otherwise stats
+  useEffect(() => {
+    if (!isGameOver || !puzzle) return;
+
+    // Check if player achieved max score (or more)
+    if (score >= totalPossibleScore && totalPossibleScore > 0) {
+      if (hasShownCelebrationRef.current) return;
+      hasShownCelebrationRef.current = true;
+
+      // Show celebration first (use setTimeout to avoid lint warning about sync setState in effect)
+      const celebrationTimer = setTimeout(() => {
+        setShowCelebration(true);
+      }, 0);
+      // After celebration, show stats
+      const statsTimer = setTimeout(() => {
+        setShowCelebration(false);
+        setIsStatsOpen(true);
+      }, CELEBRATION_DURATION_MS); // 4 seconds of celebration
+      return () => {
+        clearTimeout(celebrationTimer);
+        clearTimeout(statsTimer);
+      };
+    } else {
+      // No celebration, just show stats (use setTimeout to avoid lint warning)
+      const timer = setTimeout(() => {
+        setIsStatsOpen(true);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [isGameOver, puzzle, score, totalPossibleScore]);
+
+  // Helper function to calculate time until midnight Amsterdam
+  const calculateTimeUntilMidnight = useCallback(() => {
+    const now = new Date();
+
+    // Get current time parts in Amsterdam timezone
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Europe/Amsterdam',
+      hour: 'numeric',
+      minute: 'numeric',
+      second: 'numeric',
+      hour12: false
+    });
+
+    const parts = formatter.formatToParts(now);
+    const h = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10);
+    const m = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
+    const s = parseInt(parts.find(p => p.type === 'second')?.value || '0', 10);
+
+    const totalSecondsNow = h * 3600 + m * 60 + s;
+    const secondsInDay = 24 * 3600;
+
+    // Calculate seconds remaining until midnight
+    let diffSeconds = secondsInDay - totalSecondsNow;
+    if (diffSeconds < 0) diffSeconds = 0;
+
+    const hours = Math.floor(diffSeconds / 3600);
+    const minutes = Math.floor((diffSeconds % 3600) / 60);
+    const seconds = diffSeconds % 60;
+
+    const format = (n: number) => n.toString().padStart(2, '0');
+    return `${format(hours)}:${format(minutes)}:${format(seconds)}`;
+  }, []);
+
+  // Next puzzle countdown effect (midnight Amsterdam time)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNextPuzzleCountdown(calculateTimeUntilMidnight());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [calculateTimeUntilMidnight]);
 
 
   const handleInput = useCallback((char: string) => {
@@ -186,6 +365,14 @@ const App: React.FC = () => {
   const handleSubmit = useCallback(() => {
     if (!puzzle || !input) return;
 
+    // Prevent race conditions: if game is technically over (or time is <= 0), do not accept input.
+    if (isGameOver || timeLeft <= 0) return;
+
+    // Start timer on first submission attempt (any word, valid or not)
+    if (!hasTimerStarted) {
+      setHasTimerStarted(true);
+    }
+
     const currentInput = input.toUpperCase();
     const puzzleLetters = [puzzle.centerLetter, ...puzzle.outerLetters];
 
@@ -224,7 +411,15 @@ const App: React.FC = () => {
       setFoundWords(prev => [currentInput, ...prev]);
       setScore(prev => prev + points);
       setInput('');
-      showToast(isPangram ? `ПАНГРАМ! ${randomMessage}!` : `${randomMessage}!`, false, 2500);
+
+      // Add time bonus (points = seconds added)
+      if (!isGameOver) {
+        setTimeLeft(prev => prev + points);
+        setTimeBonus(points);
+      }
+
+      // Pangram toast: 1.5 seconds, regular success: default
+      showToast(isPangram ? `ПАНГРАМ! ${randomMessage}!` : `${randomMessage}!`, false, TOAST_DURATION_MS);
 
       if (willCompleteAllWords) {
         window.setTimeout(() => {
@@ -241,7 +436,7 @@ const App: React.FC = () => {
     } else {
       showToast("Зборот не е во листата", true);
     }
-  }, [puzzle, input, foundWords]);
+  }, [puzzle, input, foundWords, hasTimerStarted, isGameOver, timeLeft]);
 
   const copyToClipboard = async (text: string) => {
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -351,7 +546,7 @@ https://pcelka.mk`;
   };
 
   useEffect(() => {
-    if (!hasStarted) return; // Disable keyboard on welcome screen
+    if (!hasStarted || isGameOver) return; // Disable keyboard on welcome screen or when game is over
 
     const onKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toUpperCase();
@@ -376,7 +571,7 @@ https://pcelka.mk`;
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [puzzle, input, foundWords, handleDelete, handleSubmit, handleInput, hasStarted]);
+  }, [puzzle, input, foundWords, handleDelete, handleSubmit, handleInput, hasStarted, isGameOver]);
 
   // Helper to determine letter color in input display
   const getInputLetterClass = (char: string) => {
@@ -412,15 +607,39 @@ https://pcelka.mk`;
              Колку зборови можеш да составиш со 7 букви?
            </p>
 
-           <button
-             onClick={() => setHasStarted(true)}
-             disabled={isLoading}
-             className="mt-10 px-12 py-4 bg-black text-white rounded-full font-bold text-xl hover:bg-gray-800 active:scale-95 transition-all w-48 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-           >
-             {isLoading ? 'Вчитувам...' : 'Играј'}
-           </button>
+           {/* Show play button OR countdown based on game state */}
+           {isGameOver ? (
+             <>
+               {/* Next puzzle countdown - replaces play button when game is done */}
+               <div className="mt-10 flex flex-col items-center gap-2">
+                 <span className="text-lg font-medium text-black/80">Нареден предизвик за</span>
+                 <div className="flex items-center gap-3 px-8 py-4 bg-black/10 rounded-full">
+                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-black/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                     <circle cx="12" cy="12" r="9" />
+                     <path strokeLinecap="round" d="M12 7v5l3 3" />
+                   </svg>
+                   <span className="font-mono font-bold text-2xl text-black">{nextPuzzleCountdown}</span>
+                 </div>
+               </div>
+               {/* View results button */}
+               <button
+                 onClick={() => setHasStarted(true)}
+                 className="mt-4 px-8 py-3 bg-black text-white rounded-full font-bold text-base hover:bg-gray-800 active:scale-95 transition-all shadow-lg"
+               >
+                 Погледни резултат
+               </button>
+             </>
+           ) : (
+             <button
+               onClick={() => setHasStarted(true)}
+               disabled={isLoading}
+               className="mt-10 px-12 py-4 bg-black text-white rounded-full font-bold text-xl hover:bg-gray-800 active:scale-95 transition-all w-48 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+             >
+               {isLoading ? 'Вчитувам...' : 'Играј'}
+             </button>
+           )}
 
-           <div className="mt-16 text-center space-y-2">
+           <div className="mt-12 text-center space-y-1">
              <p className="font-extrabold text-lg text-black">
                {getFormattedDate()}
              </p>
@@ -452,25 +671,36 @@ https://pcelka.mk`;
           </div>
           <div className="flex flex-col items-end">
              <div className="flex items-center gap-3 mb-1">
-               <button
-                 onClick={() => setIsStatsOpen(true)}
-                 className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-                 title="Статистика"
-               >
-                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                 </svg>
-               </button>
-               <button
-                 onClick={handleShare}
-                 className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-                 title="Сподели"
-               >
-                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                 </svg>
-               </button>
-               <div className="text-xs md:text-sm font-bold text-gray-600">
+               {/* Timer - always visible during game */}
+               <GameTimer timeLeft={timeLeft} isGameOver={isGameOver} timeBonus={timeBonus} />
+
+               {/* Stats and Share buttons - only visible after game over */}
+               {isGameOver && (
+                 <>
+          <button
+            onClick={() => setIsStatsOpen(true)}
+            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+            title="Статистика"
+            style={{
+              animation: 'gentlePulse 2s ease-in-out infinite'
+            }}
+          >
+                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                     </svg>
+                   </button>
+                   <button
+                     onClick={handleShare}
+                     className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                     title="Сподели"
+                   >
+                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                       <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                     </svg>
+                   </button>
+                 </>
+               )}
+               <div className="hidden md:block text-xs md:text-sm font-bold text-gray-600">
                  {new Intl.DateTimeFormat('mk-MK', { day: 'numeric', month: 'long', timeZone: 'Europe/Amsterdam' }).format(new Date())}
                </div>
              </div>
@@ -480,8 +710,6 @@ https://pcelka.mk`;
         <ScoreBoard
           score={score}
           totalPossibleScore={totalPossibleScore}
-          wordsFound={foundWords.length}
-          totalWords={puzzle?.validWords.length || 0}
         />
 
         {/* Mobile-only Collapsible Word List (Moved to top on mobile as per request) */}
@@ -541,6 +769,7 @@ https://pcelka.mk`;
                 outerLetters={puzzle.outerLetters}
                 onLetterClick={(char) => handleInput(char)}
                 isShuffling={isShuffling}
+                disabled={isGameOver}
               />
             )}
           </div>
@@ -548,14 +777,16 @@ https://pcelka.mk`;
           <div className="flex gap-4 md:gap-6 mt-2 md:mt-6 w-full justify-center items-center">
             <button
               onClick={handleDelete}
-              className="px-6 py-3 border-2 border-gray-200 rounded-full font-bold text-sm text-gray-800 hover:bg-gray-50 active:scale-95 transition-all w-28 text-center"
+              disabled={isGameOver}
+              className="px-6 py-3 border-2 border-gray-200 rounded-full font-bold text-sm text-gray-800 hover:bg-gray-50 active:scale-95 transition-all w-28 text-center disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
             >
               Избриши
             </button>
 
             <button
               onClick={handleShuffle}
-              className="p-3 border-2 border-gray-200 rounded-full hover:bg-gray-50 active:scale-90 transition-all flex items-center justify-center w-12 h-12"
+              disabled={isGameOver}
+              className="p-3 border-2 border-gray-200 rounded-full hover:bg-gray-50 active:scale-90 transition-all flex items-center justify-center w-12 h-12 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -564,7 +795,7 @@ https://pcelka.mk`;
 
             <button
               onClick={handleSubmit}
-              disabled={!input}
+              disabled={!input || isGameOver}
               className="px-6 py-3 border-2 border-gray-200 rounded-full font-bold text-sm text-gray-800 hover:bg-gray-50 active:scale-95 transition-all w-28 text-center disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
             >
               Внеси
