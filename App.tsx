@@ -37,24 +37,19 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [showFoundWords, setShowFoundWords] = useState<boolean>(false);
 
-  // New state for Welcome Screen
   const [hasStarted, setHasStarted] = useState<boolean>(false);
-  // Animation state for shuffling
   const [isShuffling, setIsShuffling] = useState<boolean>(false);
-  // Stats Modal state
   const [isStatsOpen, setIsStatsOpen] = useState<boolean>(false);
   const [isAboutOpen, setIsAboutOpen] = useState<boolean>(false);
   const [stats, setStats] = useState<GameStats>(loadStats());
   const [showCelebration, setShowCelebration] = useState<boolean>(false);
   const [totalPossibleScore, setTotalPossibleScore] = useState<number>(0);
 
-  // Timer state
   const [timeLeft, setTimeLeft] = useState<number>(GAME_DURATION);
   const [isGameOver, setIsGameOver] = useState<boolean>(false);
   const [hasTimerStarted, setHasTimerStarted] = useState<boolean>(false);
-  const [timeBonus, setTimeBonus] = useState<number | null>(null); // For "+X" animation
+  const [timeBonus, setTimeBonus] = useState<number | null>(null);
 
-  // Next puzzle countdown state (initialized with a placeholder, updated by effect)
   const [nextPuzzleCountdown, setNextPuzzleCountdown] = useState<string>('--:--:--');
 
   const totalPossibleScoreRef = useRef(0);
@@ -63,13 +58,10 @@ const App: React.FC = () => {
   const initGame = async () => {
     setIsLoading(true);
     try {
-      // 1. Load Dictionary (cached or network)
       const dictionary = await loadDictionary();
-
-      // 2. Generate Puzzle using dictionary
       const data = await getDailyPuzzle(dictionary);
 
-      // 3. Setup Max Score for progress bar (capped at MAX_WORDS_FOR_SCORING words)
+      // Calculate capped max score: avgScore * min(MAX_WORDS_FOR_SCORING, totalWords)
       let totalRawScore = 0;
       data.validWords.forEach(word => {
         if (word.length === 4) totalRawScore += 1;
@@ -77,17 +69,15 @@ const App: React.FC = () => {
         if (data.pangrams.includes(word)) totalRawScore += 7;
       });
 
-      // Calculate capped max score: avgScore * min(55, totalWords)
       const totalWords = data.validWords.length;
       const avgScorePerWord = totalRawScore / totalWords;
       const cappedWords = Math.min(MAX_WORDS_FOR_SCORING, totalWords);
       const cappedMaxScore = Math.round(cappedWords * avgScorePerWord);
 
-      // Store in state to trigger re-renders properly (ref access in render is bad practice)
+      // Store in state AND ref (ref for callbacks that may have stale closure)
       setTotalPossibleScore(cappedMaxScore);
       totalPossibleScoreRef.current = cappedMaxScore;
 
-      // 4. Check for saved daily progress
       const todayStr = new Intl.DateTimeFormat('en-CA', {
         timeZone: 'Europe/Amsterdam',
         year: 'numeric',
@@ -99,15 +89,14 @@ const App: React.FC = () => {
 
       if (savedProgress) {
         if (savedProgress.date === todayStr) {
-           // Same day - Validate if puzzle matches (safety check)
+           // Validate puzzle matches saved progress
            if (savedProgress.centerLetter === data.centerLetter &&
                JSON.stringify(savedProgress.outerLetters.sort()) === JSON.stringify(data.outerLetters.sort())) {
 
-             // Restore progress
              setFoundWords(savedProgress.foundWords);
              setScore(savedProgress.score);
 
-             // Restore timer state with validation
+             // Restore timer state only if all fields are present (migration safety)
              const hasCompleteTimerState =
                typeof savedProgress.timeLeft === 'number' &&
                typeof savedProgress.isGameOver === 'boolean' &&
@@ -118,33 +107,27 @@ const App: React.FC = () => {
                setIsGameOver(savedProgress.isGameOver);
                setHasTimerStarted(savedProgress.hasTimerStarted);
              } else {
-               // Migration or inconsistent timer data: start a fresh timer
                setTimeLeft(GAME_DURATION);
                setIsGameOver(false);
                setHasTimerStarted(false);
              }
-             // We don't restore input
 
            } else {
              console.warn("Saved progress mismatch with generated puzzle. Resetting.");
              clearDailyProgress();
-             // Reset timer for new puzzle
              setTimeLeft(GAME_DURATION);
              setIsGameOver(false);
              setHasTimerStarted(false);
              hasShownCelebrationRef.current = false;
            }
         } else {
-           // New Day!
            clearDailyProgress();
-           // Reset timer for new day
            setTimeLeft(GAME_DURATION);
            setIsGameOver(false);
            setHasTimerStarted(false);
            hasShownCelebrationRef.current = false;
         }
       } else {
-        // No saved progress - fresh start
         setTimeLeft(GAME_DURATION);
         setIsGameOver(false);
         setHasTimerStarted(false);
@@ -160,22 +143,15 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    // Wrap in timeout or use direct async IIFE, though initGame is async.
-    // The lint error warns about calling something that sets state synchronously (or effectively so)
-    // inside useEffect without dependencies, which might be a loop risk or strict mode double invoke.
-    // But initGame IS async.
-    // Let's just suppress or ignore if it's a false positive on "cascading renders".
-    // Actually, initGame sets loading state immediately.
     const load = async () => {
       await initGame();
     }
     load();
   }, []);
 
-  // Save progress and update stats whenever important state changes
+  // Persist progress whenever important state changes (excludes timeLeft to avoid per-second writes)
   useEffect(() => {
     if (!puzzle) return;
-    // Save even if no words found (to persist timer state)
 
     const todayStr = new Intl.DateTimeFormat('en-CA', {
         timeZone: 'Europe/Amsterdam',
@@ -195,7 +171,6 @@ const App: React.FC = () => {
         hasTimerStarted
     });
 
-    // Update Stats only if we have found words
     if (foundWords.length > 0) {
       const currentRank = calculateRank(score, totalPossibleScoreRef.current);
       const pangramsCount = foundWords.filter(w => puzzle.pangrams.includes(w)).length;
@@ -209,7 +184,7 @@ const App: React.FC = () => {
       );
       setStats(newStats);
     } else if (isGameOver) {
-      // Also update stats if game is over but score is 0 (to record game played)
+      // Record game played even with 0 score
        const currentRank = calculateRank(score, totalPossibleScoreRef.current);
        const newStats = updateStatsWithDailyGame(
            todayStr,
@@ -224,19 +199,13 @@ const App: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [foundWords, score, puzzle, isGameOver, hasTimerStarted]);
 
-  // Timer countdown effect
+  // Timer pauses when about modal is open
   useEffect(() => {
-    // Only run timer when:
-    // - Game has started (clicked Play)
-    // - Timer has started (first word entered)
-    // - Game is not over
-    // - About modal is not open (pause when viewing rules)
     if (!hasStarted || !hasTimerStarted || isGameOver || isAboutOpen) return;
 
     const timer = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
-          // Time's up!
           setIsGameOver(true);
           return 0;
         }
@@ -247,37 +216,33 @@ const App: React.FC = () => {
     return () => clearInterval(timer);
   }, [hasStarted, hasTimerStarted, isGameOver, isAboutOpen]);
 
-  // Cleanup time bonus animation
   useEffect(() => {
     if (timeBonus === null) return;
     const timer = setTimeout(() => setTimeBonus(null), TIME_BONUS_ANIMATION_DURATION_MS);
     return () => clearTimeout(timer);
   }, [timeBonus]);
 
-  // Handle game over - show celebration if max score reached, otherwise stats
+  // Show celebration if max score reached, otherwise just stats modal
   useEffect(() => {
     if (!isGameOver || !puzzle) return;
 
-    // Check if player achieved max score (or more)
     if (score >= totalPossibleScore && totalPossibleScore > 0) {
       if (hasShownCelebrationRef.current) return;
       hasShownCelebrationRef.current = true;
 
-      // Show celebration first (use setTimeout to avoid lint warning about sync setState in effect)
+      // setTimeout avoids React warning about sync setState in effect
       const celebrationTimer = setTimeout(() => {
         setShowCelebration(true);
       }, 0);
-      // After celebration, show stats
       const statsTimer = setTimeout(() => {
         setShowCelebration(false);
         setIsStatsOpen(true);
-      }, CELEBRATION_DURATION_MS); // 4 seconds of celebration
+      }, CELEBRATION_DURATION_MS);
       return () => {
         clearTimeout(celebrationTimer);
         clearTimeout(statsTimer);
       };
     } else {
-      // No celebration, just show stats (use setTimeout to avoid lint warning)
       const timer = setTimeout(() => {
         setIsStatsOpen(true);
       }, 0);
@@ -285,11 +250,9 @@ const App: React.FC = () => {
     }
   }, [isGameOver, puzzle, score, totalPossibleScore]);
 
-  // Helper function to calculate time until midnight Amsterdam
+  // Calculate time until midnight Amsterdam timezone
   const calculateTimeUntilMidnight = useCallback(() => {
     const now = new Date();
-
-    // Get current time parts in Amsterdam timezone
     const formatter = new Intl.DateTimeFormat('en-US', {
       timeZone: 'Europe/Amsterdam',
       hour: 'numeric',
@@ -305,8 +268,6 @@ const App: React.FC = () => {
 
     const totalSecondsNow = h * 3600 + m * 60 + s;
     const secondsInDay = 24 * 3600;
-
-    // Calculate seconds remaining until midnight
     let diffSeconds = secondsInDay - totalSecondsNow;
     if (diffSeconds < 0) diffSeconds = 0;
 
@@ -318,18 +279,14 @@ const App: React.FC = () => {
     return `${format(hours)}:${format(minutes)}:${format(seconds)}`;
   }, []);
 
-  // Next puzzle countdown effect (midnight Amsterdam time)
   useEffect(() => {
     const timer = setInterval(() => {
       setNextPuzzleCountdown(calculateTimeUntilMidnight());
     }, 1000);
-
     return () => clearInterval(timer);
   }, [calculateTimeUntilMidnight]);
 
-
   const handleInput = useCallback((char: string) => {
-    // Allow input if it is a valid Macedonian letter, even if not in the puzzle
     if (MACEDONIAN_ALPHABET.includes(char)) {
       setInput(prev => prev + char);
       setMessage('');
@@ -353,22 +310,17 @@ const App: React.FC = () => {
     if (shake) {
       setIsShaking(true);
       shakeTimeoutRef.current = window.setTimeout(() => setIsShaking(false), 500);
-
-      // Auto-delete invalid input after shake
       clearInputTimeoutRef.current = window.setTimeout(() => {
         setInput('');
-      }, 600); // 600ms = 500ms shake + 100ms pause
+      }, 600);
     }
     toastTimeoutRef.current = window.setTimeout(() => setMessage(''), durationMs);
   };
 
   const handleSubmit = useCallback(() => {
     if (!puzzle || !input) return;
-
-    // Prevent race conditions: if game is technically over (or time is <= 0), do not accept input.
     if (isGameOver || timeLeft <= 0) return;
 
-    // Start timer on first submission attempt (any word, valid or not)
     if (!hasTimerStarted) {
       setHasTimerStarted(true);
     }
@@ -376,7 +328,6 @@ const App: React.FC = () => {
     const currentInput = input.toUpperCase();
     const puzzleLetters = [puzzle.centerLetter, ...puzzle.outerLetters];
 
-    // Check for invalid letters first
     const hasInvalidLetters = currentInput.split('').some(char => !puzzleLetters.includes(char));
     if (hasInvalidLetters) {
       showToast("Грешни букви", true);
@@ -398,7 +349,6 @@ const App: React.FC = () => {
       return;
     }
 
-    // O(1) Lookup using Set
     if (puzzle.validWordsSet.has(currentInput)) {
       const willCompleteAllWords = foundWords.length + 1 === puzzle.validWords.length;
       let points = currentInput.length === 4 ? 1 : currentInput.length;
@@ -412,13 +362,9 @@ const App: React.FC = () => {
       setScore(prev => prev + points);
       setInput('');
 
-      // Add time bonus (points = seconds added)
-      if (!isGameOver) {
-        setTimeLeft(prev => prev + points);
-        setTimeBonus(points);
-      }
+      setTimeLeft(prev => prev + points);
+      setTimeBonus(points);
 
-      // Pangram toast: 1.5 seconds, regular success: default
       showToast(isPangram ? `ПАНГРАМ! ${randomMessage}!` : `${randomMessage}!`, false, TOAST_DURATION_MS);
 
       if (willCompleteAllWords) {
@@ -443,7 +389,7 @@ const App: React.FC = () => {
       await navigator.clipboard.writeText(text);
       return true;
     } else {
-      // Fallback for non-secure contexts (http) or older browsers
+      // Fallback for older browsers or non-secure contexts
       const textArea = document.createElement("textarea");
       textArea.value = text;
       textArea.style.position = "fixed";
@@ -487,7 +433,6 @@ https://pcelka.mk`;
           text: shareText,
         });
       } catch (err) {
-        // If user cancelled, do nothing. If error, try clipboard.
         if ((err as Error).name !== 'AbortError') {
           const success = await copyToClipboard(shareText);
           if (success) {
@@ -508,25 +453,20 @@ https://pcelka.mk`;
   const handleShuffle = () => {
     if (!puzzle || isShuffling) return;
 
-    // Start fade out
     setIsShuffling(true);
 
-    // Wait for fade out to complete, then shuffle and fade in
     setTimeout(() => {
-      // Improved shuffle: Derangement-like shuffle
       const original = puzzle.outerLetters;
       let shuffled = [...original];
 
-      // Try to shuffle until at least some positions are different
-      // (Complete derangement isn't always possible or necessary for small sets,
-      // but we want to avoid exact same order)
+      // Ensure shuffle produces a different arrangement
       let attempts = 0;
       do {
         shuffled = shuffled.sort(() => Math.random() - 0.5);
         attempts++;
       } while (
         attempts < 10 &&
-        shuffled.every((char, i) => char === original[i]) // avoid exact match
+        shuffled.every((char, i) => char === original[i])
       );
 
       setPuzzle({ ...puzzle, outerLetters: shuffled });
@@ -534,7 +474,6 @@ https://pcelka.mk`;
     }, 200);
   };
 
-  // Helper to map Latin keys to Cyrillic
   const mapToCyrillic = (key: string): string => {
     const map: {[key: string]: string} = {
       'A': 'А', 'B': 'Б', 'V': 'В', 'G': 'Г', 'D': 'Д', 'K': 'К',
@@ -546,7 +485,7 @@ https://pcelka.mk`;
   };
 
   useEffect(() => {
-    if (!hasStarted || isGameOver) return; // Disable keyboard on welcome screen or when game is over
+    if (!hasStarted || isGameOver) return;
 
     const onKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toUpperCase();
@@ -561,10 +500,7 @@ https://pcelka.mk`;
         return;
       }
 
-      // Try direct match or mapped match
       const cyrillicKey = mapToCyrillic(key);
-
-      // Allow any valid Macedonian alphabet character
       if (MACEDONIAN_ALPHABET.includes(cyrillicKey)) {
         handleInput(cyrillicKey);
       }
@@ -573,28 +509,23 @@ https://pcelka.mk`;
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [puzzle, input, foundWords, handleDelete, handleSubmit, handleInput, hasStarted, isGameOver]);
 
-  // Helper to determine letter color in input display
   const getInputLetterClass = (char: string) => {
     if (!puzzle) return 'text-black';
     if (char === puzzle.centerLetter) return 'text-yellow-400';
     if (puzzle.outerLetters.includes(char)) return 'text-black';
-    return 'text-gray-300'; // Invalid letters are light gray
+    return 'text-gray-300';
   };
 
-  // Helper for date formatting
   const getFormattedDate = () => {
     const dateStr = new Intl.DateTimeFormat('mk-MK', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
-    // Remove " г." or "г." suffix if present
     return dateStr.replace(/\s?г\.?$/, '');
   };
 
-  // RENDER WELCOME SCREEN
   if (!hasStarted) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#f7da21] text-black p-6 relative">
          <div className="flex flex-col items-center max-w-md w-full text-center space-y-6 animate-in fade-in zoom-in duration-500">
 
-           {/* Side View Bee Icon */}
            <div className="w-28 h-28 md:w-36 md:h-36 relative mb-2">
              <img src={`${import.meta.env.BASE_URL}bee.svg`} alt="Bee" className="w-full h-full drop-shadow-sm" />
            </div>
@@ -607,10 +538,8 @@ https://pcelka.mk`;
              Колку зборови можеш да составиш со 7 букви?
            </p>
 
-           {/* Show play button OR countdown based on game state */}
            {isGameOver ? (
              <>
-               {/* Next puzzle countdown - replaces play button when game is done */}
                <div className="mt-10 flex flex-col items-center gap-2">
                  <span className="text-lg font-medium text-black/80">Нареден предизвик за</span>
                  <div className="flex items-center gap-3 px-8 py-4 bg-black/10 rounded-full">
@@ -621,7 +550,6 @@ https://pcelka.mk`;
                    <span className="font-mono font-bold text-2xl text-black">{nextPuzzleCountdown}</span>
                  </div>
                </div>
-               {/* View results button */}
                <button
                  onClick={() => setHasStarted(true)}
                  className="mt-4 px-8 py-3 bg-black text-white rounded-full font-bold text-base hover:bg-gray-800 active:scale-95 transition-all shadow-lg"
@@ -650,7 +578,6 @@ https://pcelka.mk`;
     );
   }
 
-  // MAIN GAME SCREEN (Only rendered if hasStarted is true)
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-white">
@@ -662,7 +589,6 @@ https://pcelka.mk`;
   return (
     <div className="flex flex-col md:flex-row h-[100dvh] max-w-6xl mx-auto md:px-6 select-none overflow-hidden bg-white">
 
-      {/* Left Column: Game Area */}
       <div className="flex-1 flex flex-col px-4 py-2 md:py-6 h-full overflow-hidden md:overflow-y-auto overflow-x-hidden touch-none md:border-r md:border-gray-100 md:pr-8">
         <header className="flex justify-between items-center mb-2 md:mb-6 border-b pb-2 md:pb-4">
           <div className="flex flex-col">
@@ -671,10 +597,8 @@ https://pcelka.mk`;
           </div>
           <div className="flex flex-col items-end">
              <div className="flex items-center gap-3 mb-1">
-               {/* Timer - always visible during game */}
                <GameTimer timeLeft={timeLeft} isGameOver={isGameOver} timeBonus={timeBonus} />
 
-               {/* Stats and Share buttons - only visible after game over */}
                {isGameOver && (
                  <>
           <button
@@ -712,7 +636,6 @@ https://pcelka.mk`;
           totalPossibleScore={totalPossibleScore}
         />
 
-        {/* Mobile-only Collapsible Word List (Moved to top on mobile as per request) */}
         <div className="mb-2 md:hidden w-full max-w-md mx-auto px-2">
           <div
             onClick={() => setShowFoundWords(!showFoundWords)}
@@ -813,7 +736,6 @@ https://pcelka.mk`;
         </div>
       </div>
 
-      {/* Right Column: Desktop Word List */}
       <div className="hidden md:flex flex-col w-80 py-6 pl-8 h-full">
         <div className="border border-gray-200 rounded-xl p-6 h-full flex flex-col shadow-sm bg-white">
           <div className="mb-4">
