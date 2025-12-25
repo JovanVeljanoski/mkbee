@@ -15,6 +15,9 @@ export interface DailyProgress {
   score: number;
   centerLetter: string;      // For validation
   outerLetters: string[];    // For validation
+  timeLeft: number;          // Seconds remaining (0-90)
+  isGameOver: boolean;       // True when timer has expired
+  hasTimerStarted: boolean;  // True after first word is entered
 }
 
 export interface GameStats {

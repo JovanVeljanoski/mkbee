@@ -14,8 +14,8 @@ export enum GameRank {
   Good = 'Добро',
   Solid = 'Солидно',
   Amazing = 'Одлично',
-  Great = 'Супер',
-  Genius = 'Генијалец'
+  Great = 'Фантастично',
+  Genius = 'Генијално'
 }
 
 export interface RankInfo {

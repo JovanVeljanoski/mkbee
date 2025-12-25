@@ -8,13 +8,20 @@ interface HexagonProps {
   onClick: (letter: string) => void;
   className?: string;
   isShuffling?: boolean;
+  disabled?: boolean;
 }
 
-const Hexagon: React.FC<HexagonProps> = ({ letter, isCenter, onClick, className = "", isShuffling }) => {
+const Hexagon: React.FC<HexagonProps> = ({ letter, isCenter, onClick, className = "", isShuffling, disabled }) => {
+  const handleClick = () => {
+    if (!disabled) {
+      onClick(letter);
+    }
+  };
+
   return (
     <div
-      className={`relative group cursor-pointer select-none transition-transform active:scale-95 ${className}`}
-      onClick={() => onClick(letter)}
+      className={`relative group select-none transition-transform ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer active:scale-95'} ${className}`}
+      onClick={handleClick}
       style={{
         width: '100px',
         height: '87px', // approx 100 * sqrt(3)/2

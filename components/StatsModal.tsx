@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { GameStats } from '../services/storageService';
-import { GameRank } from '../types';
 import { RANKS } from '../constants';
 
 interface StatsModalProps {
@@ -64,8 +63,8 @@ const StatsModal: React.FC<StatsModalProps> = ({ isOpen, onClose, stats }) => {
               {[...RANKS].reverse().map((rank) => {
                 const count = stats.rankDistribution[rank.name] || 0;
                 const percentage = (count / maxFreq) * 100;
-                // Only show ranks that have been achieved at least once or are "Genius" to aspire to
-                if (count === 0 && rank.name !== GameRank.Genius) return null;
+                // Only show ranks that have been achieved at least once
+                if (count === 0) return null;
 
                 return (
                   <div key={rank.name} className="flex items-center gap-3 text-sm">
