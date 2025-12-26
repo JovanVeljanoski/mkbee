@@ -3,6 +3,7 @@
 const DB_NAME = 'mkbee-dictionary';
 const STORE_NAME = 'dictionary';
 const CURRENT_VERSION = 1; // Increment when dictionary updates
+const IS_DEV = import.meta.env.DEV;
 
 interface DictionaryCache {
   version: number;
@@ -43,7 +44,7 @@ async function getCachedDictionary(): Promise<string[] | null> {
       request.onsuccess = () => {
         const cached: DictionaryCache | undefined = request.result;
         if (cached && cached.version === CURRENT_VERSION) {
-          console.log('✅ Dictionary loaded from IndexedDB cache');
+          if (IS_DEV) console.log('✅ Dictionary loaded from IndexedDB cache');
           resolve(cached.words);
         } else {
           resolve(null);
@@ -73,7 +74,7 @@ async function cacheDictionary(words: string[]): Promise<void> {
     };
 
     store.put(cache, 'main');
-    console.log('✅ Dictionary cached in IndexedDB');
+    if (IS_DEV) console.log('✅ Dictionary cached in IndexedDB');
   } catch (error) {
     console.warn('Failed to cache dictionary:', error);
   }
@@ -86,7 +87,7 @@ async function fetchAndDecompressDictionary(): Promise<string[]> {
   // 1. Try Gzip (.gz) first if DecompressionStream is supported
   if (typeof DecompressionStream !== 'undefined') {
     try {
-      console.log('📥 Fetching dictionary from network (Gzip)...');
+      if (IS_DEV) console.log('📥 Fetching dictionary from network (Gzip)...');
       const gzipResponse = await fetch(`${import.meta.env.BASE_URL}data/mk_words.json.gz`);
 
       if (gzipResponse.ok && gzipResponse.body) {
@@ -102,10 +103,10 @@ async function fetchAndDecompressDictionary(): Promise<string[]> {
 
   // 2. Fallback to uncompressed
   try {
-    console.log('📥 Fetching dictionary from network (JSON)...');
+    if (IS_DEV) console.log('📥 Fetching dictionary from network (JSON)...');
     const response = await fetch(`${import.meta.env.BASE_URL}data/mk_words.json`);
     if (!response.ok) {
-        throw new Error(`Failed to load dictionary: ${response.statusText}`);
+      throw new Error(`Failed to load dictionary: ${response.statusText}`);
     }
     return await response.json();
   } catch (error) {
@@ -118,7 +119,7 @@ export async function loadDictionary(): Promise<string[]> {
   // 1. Try IndexedDB cache first
   const cached = await getCachedDictionary();
   if (cached) {
-      return cached;
+    return cached;
   }
 
   // 2. Fetch from network (prefer compressed)

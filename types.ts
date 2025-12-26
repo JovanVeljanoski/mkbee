@@ -1,4 +1,3 @@
-
 export interface PuzzleData {
   centerLetter: string;
   outerLetters: string[];

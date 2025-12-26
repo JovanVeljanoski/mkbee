@@ -1,10 +1,9 @@
-
 import React from 'react';
 
 interface GameTimerProps {
   timeLeft: number;
   isGameOver: boolean;
-  timeBonus?: number | null; // For "+X" animation
+  timeBonus?: number | null;
 }
 
 const GameTimer: React.FC<GameTimerProps> = ({ timeLeft, isGameOver, timeBonus }) => {
@@ -66,4 +65,4 @@ const GameTimer: React.FC<GameTimerProps> = ({ timeLeft, isGameOver, timeBonus }
   );
 };
 
-export default GameTimer;
+export default React.memo(GameTimer);

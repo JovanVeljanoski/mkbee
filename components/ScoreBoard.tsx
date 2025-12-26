@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { RANKS } from '../constants';
 import { calculateRank } from '../services/puzzleService';
@@ -44,17 +43,17 @@ const ScoreBoard: React.FC<ScoreBoardProps> = ({ score, totalPossibleScore }) =>
             onTouchEnd={() => setTimeout(() => setShowNextLevelTooltip(false), 2000)}
           >
             {RANKS.map((rank, i) => {
-               // Only show dots for ranks > 0 (Beginner is implicit start) or if you want all dots
-               if (i === 0) return null; // Skip beginner dot if desired, or keep it.
+              // Only show dots for ranks > 0 (Beginner is implicit start)
+              if (i === 0) return null;
 
-               const req = (rank.minScore / 100) * safeTotal;
-               return (
-                 <div
-                   key={i}
-                   className={`w-2.5 h-2.5 rounded-full transition-colors duration-300 ${score >= req ? 'bg-yellow-400' : 'bg-gray-200'}`}
-                   title={`${rank.name}: ${Math.ceil(req)}`}
-                 />
-               );
+              const req = (rank.minScore / 100) * safeTotal;
+              return (
+                <div
+                  key={i}
+                  className={`w-2.5 h-2.5 rounded-full transition-colors duration-300 ${score >= req ? 'bg-yellow-400' : 'bg-gray-200'}`}
+                  title={`${rank.name}: ${Math.ceil(req)}`}
+                />
+              );
             })}
 
             {/* Next Level Tooltip */}
@@ -81,4 +80,4 @@ const ScoreBoard: React.FC<ScoreBoardProps> = ({ score, totalPossibleScore }) =>
   );
 };
 
-export default ScoreBoard;
+export default React.memo(ScoreBoard);

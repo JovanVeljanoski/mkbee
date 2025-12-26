@@ -1,4 +1,3 @@
-
 import { GameRank } from "../types";
 
 // KEY CONSTANTS

@@ -3,7 +3,7 @@ import React from 'react';
 interface FoundWordsListProps {
   words: string[];
   pangrams: string[];
-  isMobile?: boolean; // Determines styling for mobile vs desktop
+  isMobile?: boolean;
 }
 
 const FoundWordsList: React.FC<FoundWordsListProps> = ({ words, pangrams, isMobile = false }) => {
@@ -11,7 +11,6 @@ const FoundWordsList: React.FC<FoundWordsListProps> = ({ words, pangrams, isMobi
     if (isMobile) {
       return <p className="text-gray-400 col-span-full italic text-xs font-bold">Започни со игра...</p>;
     }
-    // Desktop empty state (optional, or just show empty list)
     return null;
   }
 
@@ -19,9 +18,9 @@ const FoundWordsList: React.FC<FoundWordsListProps> = ({ words, pangrams, isMobi
 
   return (
     <>
-      {sortedWords.map((word, i) => (
+      {sortedWords.map((word) => (
         <div
-          key={i}
+          key={word}
           className={`
             ${isMobile
               ? 'py-1 text-sm border-b border-gray-50'
@@ -38,5 +37,4 @@ const FoundWordsList: React.FC<FoundWordsListProps> = ({ words, pangrams, isMobi
   );
 };
 
-export default FoundWordsList;
-
+export default React.memo(FoundWordsList);
