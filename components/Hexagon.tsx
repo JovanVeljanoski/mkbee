@@ -1,6 +1,9 @@
-
 import React from 'react';
 import { COLORS } from '../constants';
+
+// Hexagon dimensions
+const HEXAGON_WIDTH = 100;
+const HEXAGON_HEIGHT = 87; // approx width * sqrt(3)/2
 
 interface HexagonProps {
   letter: string;
@@ -19,12 +22,15 @@ const Hexagon: React.FC<HexagonProps> = ({ letter, isCenter, onClick, className 
   };
 
   return (
-    <div
-      className={`relative group select-none transition-transform ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer active:scale-95'} ${className}`}
+    <button
+      type="button"
       onClick={handleClick}
+      disabled={disabled}
+      aria-label={`Буква ${letter}`}
+      className={`relative group select-none transition-transform border-0 bg-transparent p-0 ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer active:scale-95'} ${className}`}
       style={{
-        width: '100px',
-        height: '87px', // approx 100 * sqrt(3)/2
+        width: `${HEXAGON_WIDTH}px`,
+        height: `${HEXAGON_HEIGHT}px`,
       }}
     >
       <div
@@ -40,8 +46,8 @@ const Hexagon: React.FC<HexagonProps> = ({ letter, isCenter, onClick, className 
           {letter}
         </span>
       </div>
-    </div>
+    </button>
   );
 };
 
-export default Hexagon;
+export default React.memo(Hexagon);

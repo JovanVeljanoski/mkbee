@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { GameStats } from '../services/storageService';
 import { GameRank } from '../types';

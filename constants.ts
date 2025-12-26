@@ -1,4 +1,3 @@
-
 import { GameRank, RankInfo } from './types';
 
 export const MACEDONIAN_ALPHABET = [

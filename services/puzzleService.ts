@@ -1,5 +1,6 @@
 import { PuzzleData, GameRank } from "../types";
 import { MACEDONIAN_DICTIONARY, RANKS } from "../constants";
+import { getAmsterdamDateString } from "../utils/dateUtils";
 
 // Simple seeded random function
 export function seededRandom(seed: string) {
@@ -25,14 +26,7 @@ export function shuffleArray<T>(array: T[], rng: () => number): T[] {
 }
 
 export async function getDailyPuzzle(dictionaryWords: string[] = MACEDONIAN_DICTIONARY): Promise<PuzzleData> {
-  // 1. Get current date in Amsterdam time string (YYYY-MM-DD)
-  const amsterdamDate = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Europe/Amsterdam',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  }).format(new Date());
-
+  const amsterdamDate = getAmsterdamDateString();
   const rng = seededRandom(amsterdamDate);
 
   // 2. Find all pangrams (words with exactly 7 unique letters)
