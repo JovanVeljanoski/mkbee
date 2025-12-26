@@ -47,6 +47,51 @@ describe('puzzleService', () => {
       expect(calculateRank(10, totalScore)).toBe(GameRank.Good);
       expect(calculateRank(75, totalScore)).toBe(GameRank.Genius);
     });
+
+    // Edge case tests
+    it('should handle exactly-at-threshold scores', () => {
+      // Exactly at 70% threshold should be Genius
+      expect(calculateRank(70, 100)).toBe(GameRank.Genius);
+      // Exactly at 40% threshold should be Great
+      expect(calculateRank(40, 100)).toBe(GameRank.Great);
+      // Exactly at 25% threshold should be Amazing
+      expect(calculateRank(25, 100)).toBe(GameRank.Amazing);
+    });
+
+    it('should handle score just below threshold', () => {
+      // Just below 70% should be Great
+      expect(calculateRank(69, 100)).toBe(GameRank.Great);
+      // Just below 40% should be Amazing
+      expect(calculateRank(39, 100)).toBe(GameRank.Amazing);
+    });
+
+    it('should handle totalPossibleScore of 0 (division by zero protection)', () => {
+      // Should default to 100 internally and return Beginner for low scores
+      const result = calculateRank(5, 0);
+      expect(result).toBe(GameRank.MovingUp); // 5/100 = 5%
+    });
+
+    it('should handle score exceeding totalPossibleScore', () => {
+      // Score can theoretically exceed max in edge cases
+      expect(calculateRank(150, 100)).toBe(GameRank.Genius);
+    });
+
+    it('should handle fractional percentage thresholds correctly', () => {
+      // With totalScore of 200, 70% = 140
+      expect(calculateRank(140, 200)).toBe(GameRank.Genius);
+      expect(calculateRank(139, 200)).toBe(GameRank.Great);
+    });
+
+    it('should handle small totalPossibleScore values', () => {
+      // With totalScore of 10, thresholds are very small
+      expect(calculateRank(7, 10)).toBe(GameRank.Genius); // 70%
+      expect(calculateRank(4, 10)).toBe(GameRank.Great);  // 40%
+    });
+
+    it('should handle negative scores gracefully', () => {
+      // Negative scores should still return Beginner
+      expect(calculateRank(-10, 100)).toBe(GameRank.Beginner);
+    });
   });
 
   describe('getDailyPuzzle', () => {

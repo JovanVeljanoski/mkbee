@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { RANKS } from '../constants';
 import { calculateRank } from '../services/puzzleService';
 
@@ -12,6 +12,16 @@ const ScoreBoard: React.FC<ScoreBoardProps> = ({ score, totalPossibleScore }) =>
   const safeTotal = totalPossibleScore || 100;
   const percentage = Math.min((score / safeTotal) * 100, 100);
   const [showNextLevelTooltip, setShowNextLevelTooltip] = useState<boolean>(false);
+  const touchTimeoutRef = useRef<number | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (touchTimeoutRef.current) {
+        window.clearTimeout(touchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Use shared logic for current rank
   const currentRank = calculateRank(score, safeTotal);
@@ -40,7 +50,10 @@ const ScoreBoard: React.FC<ScoreBoardProps> = ({ score, totalPossibleScore }) =>
             onMouseEnter={() => setShowNextLevelTooltip(true)}
             onMouseLeave={() => setShowNextLevelTooltip(false)}
             onTouchStart={() => setShowNextLevelTooltip(true)}
-            onTouchEnd={() => setTimeout(() => setShowNextLevelTooltip(false), 2000)}
+            onTouchEnd={() => {
+              if (touchTimeoutRef.current) window.clearTimeout(touchTimeoutRef.current);
+              touchTimeoutRef.current = window.setTimeout(() => setShowNextLevelTooltip(false), 2000);
+            }}
           >
             {RANKS.map((rank, i) => {
               // Only show dots for ranks > 0 (Beginner is implicit start)

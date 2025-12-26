@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getTimeUntilMidnightAmsterdam } from '../utils/dateUtils';
 
 interface AboutModalProps {
   isOpen: boolean;
@@ -6,51 +7,15 @@ interface AboutModalProps {
 }
 
 const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
-  const [timeLeft, setTimeLeft] = useState<string>('');
+  // Initialize with actual value to avoid empty flash
+  const [timeLeft, setTimeLeft] = useState<string>(() => getTimeUntilMidnightAmsterdam());
 
   useEffect(() => {
     if (!isOpen) return;
 
-    const calculateTimeLeft = () => {
-      const now = new Date();
-
-      // Get current time string in Amsterdam timezone
-      const amsterdamTimeStr = new Intl.DateTimeFormat('en-US', {
-        timeZone: 'Europe/Amsterdam',
-        year: 'numeric',
-        month: 'numeric',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: 'numeric',
-        second: 'numeric',
-        hour12: false
-      }).format(now);
-
-      const amsterdamTime = new Date(amsterdamTimeStr);
-
-      // Create next midnight object relative to Amsterdam time
-      const nextMidnight = new Date(amsterdamTime);
-      nextMidnight.setHours(24, 0, 0, 0);
-
-      const diff = nextMidnight.getTime() - amsterdamTime.getTime();
-
-      if (diff <= 0) {
-        return "00:00:00";
-      }
-
-      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-      const minutes = Math.floor((diff / (1000 * 60)) % 60);
-      const seconds = Math.floor((diff / 1000) % 60);
-
-      const format = (n: number) => n.toString().padStart(2, '0');
-      return `${format(hours)}:${format(minutes)}:${format(seconds)}`;
-    };
-
-    // Initial calculation
-    // setTimeLeft(calculateTimeLeft()); // Avoid direct state update in effect
-
+    // Update timer every second when modal is open
     const timer = setInterval(() => {
-      setTimeLeft(calculateTimeLeft());
+      setTimeLeft(getTimeUntilMidnightAmsterdam());
     }, 1000);
 
     return () => clearInterval(timer);
