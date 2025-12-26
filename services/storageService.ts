@@ -20,8 +20,17 @@ export interface DailyProgress {
   hasTimerStarted: boolean;  // True after first word is entered
 }
 
+export interface DailyScoreEntry {
+  date: string;
+  score: number;
+  rank: GameRank;
+  wordsFound: number;
+  pangramsFound: number;
+}
+
 export interface GameStats {
   totalGamesPlayed: number;
+  totalPoints: number;
   topScore: number;
   topScoreDate: string;
   totalWordsFound: number;
@@ -29,16 +38,12 @@ export interface GameStats {
   rankDistribution: {
     [key in GameRank]?: number;
   };
-  dailyScores: Array<{
-    date: string;
-    score: number;
-    rank: GameRank;
-    wordsFound: number;
-  }>;
+  dailyScores: DailyScoreEntry[];
 }
 
 const INITIAL_STATS: GameStats = {
   totalGamesPlayed: 0,
+  totalPoints: 0,
   topScore: 0,
   topScoreDate: '',
   totalWordsFound: 0,
@@ -91,7 +96,9 @@ export function loadStats(): GameStats {
   try {
     const stored = localStorage.getItem(KEYS.STATS);
     if (!stored) return INITIAL_STATS;
-    return { ...INITIAL_STATS, ...JSON.parse(stored) };
+    const parsed = JSON.parse(stored);
+    // Merge with INITIAL_STATS to handle any missing fields from older versions
+    return { ...INITIAL_STATS, ...parsed };
   } catch (error) {
     console.error("Failed to load stats:", error);
     return INITIAL_STATS;
@@ -107,91 +114,45 @@ export function updateStatsWithDailyGame(
 ): GameStats {
   const stats = loadStats();
 
-  // Check if we already recorded this day to avoid double counting
-  // We identify by date in dailyScores
+  // Check if we already recorded this day
   const existingEntryIndex = stats.dailyScores.findIndex(s => s.date === date);
 
   if (existingEntryIndex !== -1) {
-    // Update existing entry
+    // Update existing entry - calculate diffs
     const prevEntry = stats.dailyScores[existingEntryIndex];
 
-    // Update totals by removing old values and adding new ones
-    // Note: This logic assumes we only call this when finishing a session or updating.
-    // However, simpler approach: re-calculate stats from scratch or just update fields?
-    // Since we don't store full history of every word found in stats (only count),
-    // we should be careful.
+    // Calculate diffs for incremental updates
+    const wordsDiff = wordsFoundCount - (prevEntry.wordsFound || 0);
+    const pangramsDiff = pangramsFoundCount - (prevEntry.pangramsFound || 0);
+    const scoreDiff = score - (prevEntry.score || 0);
 
-    // Better approach: We trigger this update when the game session ends (new day) or
-    // we can update it incrementally.
-
-    // Let's adopt a strategy: "Stats reflect completed games or current progress?"
-    // Usually stats reflect "games played".
-    // If we update on every word, it might be heavy.
-    // BUT we need to show current stats in the modal.
-
-    // Let's update the specific day entry and recalculate derived stats.
-
+    // Update the daily entry
     stats.dailyScores[existingEntryIndex] = {
       date,
       score,
       rank,
-      wordsFound: wordsFoundCount
+      wordsFound: wordsFoundCount,
+      pangramsFound: pangramsFoundCount
     };
 
-    // We can't easily "undo" the totals for topScore etc without more data.
-    // So for "Total Games Played", "Total Words Found", we might need to handle them carefully.
+    // Update totals with diffs
+    stats.totalWordsFound += wordsDiff;
+    stats.totalPangramsFound += pangramsDiff;
+    stats.totalPoints += scoreDiff;
 
-    // SIMPLIFICATION:
-    // We will save stats only when:
-    // 1. New day starts (archive yesterday)
-    // 2. OR purely rely on `dailyScores` array to derive totals? No, that array might get long.
-
-    // Let's stick to the plan:
-    // "Stats update triggers: 1. When day changes (finalize yesterday's game)"
-    // "2. When user submits a word (update running totals)?" - Maybe too frequent.
-
-    // Let's do: Update stats only when saving a COMPLETED day (when next day starts)
-    // OR update them in real-time?
-
-    // If we update in real-time, we need to handle the diff.
-    // Let's implement a simple `updateStats` that takes the FULL current state and merges it.
-
-    // Actually, simply saving the high score and total stats is safer if we do it transactionally.
-    // But since we want to be robust:
-
-    // Let's calculate totals from dailyScores + current session?
-    // No, historical data might be summarized.
-
-    // STRATEGY:
-    // We will trust the passed values are the LATEST for today.
-    // We will update the daily entry.
-    // We will re-check Top Score.
-    // We will NOT increment "Total Words" incrementally here to avoid bugs.
-    // Instead, we can calculate "Total Words" by summing dailyScores if we keep them all?
-    // Or we store "Legacy Total" + "Daily Scores".
-
-    // Let's just update the daily record and top score for now.
-    // Detailed word counts can be tricky if we don't have diffs.
-
+    // Update top score if needed
     if (score > stats.topScore) {
       stats.topScore = score;
       stats.topScoreDate = date;
     }
 
-    // Rank distribution - this is tricky if rank changes during the day.
-    // We should decrement old rank and increment new rank?
-    // Yes, if we track it.
-
+    // Update rank distribution if rank changed
     if (prevEntry.rank !== rank) {
-        if (stats.rankDistribution[prevEntry.rank]) {
-            stats.rankDistribution[prevEntry.rank]! -= 1;
-        }
-        stats.rankDistribution[rank] = (stats.rankDistribution[rank] || 0) + 1;
+      if (stats.rankDistribution[prevEntry.rank]) {
+        stats.rankDistribution[prevEntry.rank]! -= 1;
+      }
+      stats.rankDistribution[rank] = (stats.rankDistribution[rank] || 0) + 1;
     }
-
-    stats.totalWordsFound += (wordsFoundCount - prevEntry.wordsFound);
-    // stats.totalPangramsFound += (pangramsFoundCount - prevEntry.pangramsFound); // We need prev pangrams count... which we don't have in dailyScores
-    // We'll skip pangram total tracking for now or add it to dailyScores
 
   } else {
     // New Day Entry
@@ -201,8 +162,14 @@ export function updateStatsWithDailyGame(
       date,
       score,
       rank,
-      wordsFound: wordsFoundCount
+      wordsFound: wordsFoundCount,
+      pangramsFound: pangramsFoundCount
     });
+
+    // Update all totals
+    stats.totalPoints += score;
+    stats.totalWordsFound += wordsFoundCount;
+    stats.totalPangramsFound += pangramsFoundCount;
 
     if (score > stats.topScore) {
       stats.topScore = score;
@@ -210,8 +177,6 @@ export function updateStatsWithDailyGame(
     }
 
     stats.rankDistribution[rank] = (stats.rankDistribution[rank] || 0) + 1;
-    stats.totalWordsFound += wordsFoundCount;
-    stats.totalPangramsFound += pangramsFoundCount;
   }
 
   saveStats(stats);
