@@ -14,11 +14,10 @@ const FoundWordsList: React.FC<FoundWordsListProps> = ({ words, pangrams, isMobi
     return null;
   }
 
-  const sortedWords = [...words].sort((a, b) => a.localeCompare(b));
-
+  // Note: words are expected to be pre-sorted by the parent component
   return (
     <>
-      {sortedWords.map((word) => (
+      {words.map((word) => (
         <div
           key={word}
           className={`

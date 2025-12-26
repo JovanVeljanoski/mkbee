@@ -10,7 +10,7 @@ import {
   loadStats,
   GameStats
 } from './services/storageService';
-import { getAmsterdamDateString, getFormattedDisplayDate } from './utils/dateUtils';
+import { getAmsterdamDateString, getFormattedDisplayDate, getTimeUntilMidnightAmsterdam } from './utils/dateUtils';
 import Hive from './components/Hive';
 import ScoreBoard from './components/ScoreBoard';
 import StatsModal from './components/StatsModal';
@@ -58,7 +58,8 @@ const App: React.FC = () => {
   const [hasTimerStarted, setHasTimerStarted] = useState<boolean>(false);
   const [timeBonus, setTimeBonus] = useState<number | null>(null);
 
-  const [nextPuzzleCountdown, setNextPuzzleCountdown] = useState<string>('--:--:--');
+  // Initialize with actual value to avoid placeholder flash
+  const [nextPuzzleCountdown, setNextPuzzleCountdown] = useState<string>(() => getTimeUntilMidnightAmsterdam());
 
   const totalPossibleScoreRef = useRef(0);
   const hasShownCelebrationRef = useRef(false);
@@ -70,6 +71,18 @@ const App: React.FC = () => {
   const sortedFoundWords = useMemo(() =>
     [...foundWords].sort((a, b) => a.localeCompare(b)),
     [foundWords]
+  );
+
+  // Memoize current rank to avoid recalculating during renders
+  const currentRank = useMemo(() =>
+    calculateRank(score, totalPossibleScore || 100),
+    [score, totalPossibleScore]
+  );
+
+  // Memoize pangrams count
+  const todayPangrams = useMemo(() =>
+    puzzle ? foundWords.filter(w => puzzle.pangrams.includes(w)).length : 0,
+    [foundWords, puzzle]
   );
 
   const initGame = async () => {
@@ -178,20 +191,16 @@ const App: React.FC = () => {
     });
 
     if (foundWords.length > 0) {
-      const currentRank = calculateRank(score, totalPossibleScoreRef.current);
-      const pangramsCount = foundWords.filter(w => puzzle.pangrams.includes(w)).length;
-
       const newStats = updateStatsWithDailyGame(
         todayStr,
         score,
         currentRank,
         foundWords.length,
-        pangramsCount
+        todayPangrams
       );
       setStats(newStats);
     } else if (isGameOver) {
       // Record game played even with 0 score
-      const currentRank = calculateRank(score, totalPossibleScoreRef.current);
       const newStats = updateStatsWithDailyGame(
         todayStr,
         score,
@@ -203,7 +212,7 @@ const App: React.FC = () => {
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [foundWords, score, puzzle, isGameOver, hasTimerStarted]);
+  }, [foundWords, score, puzzle, isGameOver, hasTimerStarted, currentRank, todayPangrams]);
 
   // Timer pauses when about modal is open
   useEffect(() => {
@@ -272,41 +281,13 @@ const App: React.FC = () => {
     }
   }, [isGameOver, puzzle, score, totalPossibleScore]);
 
-  // Calculate time until midnight Amsterdam timezone
-  const calculateTimeUntilMidnight = useCallback(() => {
-    const now = new Date();
-    const formatter = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'Europe/Amsterdam',
-      hour: 'numeric',
-      minute: 'numeric',
-      second: 'numeric',
-      hour12: false
-    });
-
-    const parts = formatter.formatToParts(now);
-    const h = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10);
-    const m = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
-    const s = parseInt(parts.find(p => p.type === 'second')?.value || '0', 10);
-
-    const totalSecondsNow = h * 3600 + m * 60 + s;
-    const secondsInDay = 24 * 3600;
-    let diffSeconds = secondsInDay - totalSecondsNow;
-    if (diffSeconds < 0) diffSeconds = 0;
-
-    const hours = Math.floor(diffSeconds / 3600);
-    const minutes = Math.floor((diffSeconds % 3600) / 60);
-    const seconds = diffSeconds % 60;
-
-    const format = (n: number) => n.toString().padStart(2, '0');
-    return `${format(hours)}:${format(minutes)}:${format(seconds)}`;
-  }, []);
-
+  // Update countdown timer every second
   useEffect(() => {
     const timer = setInterval(() => {
-      setNextPuzzleCountdown(calculateTimeUntilMidnight());
+      setNextPuzzleCountdown(getTimeUntilMidnightAmsterdam());
     }, 1000);
     return () => clearInterval(timer);
-  }, [calculateTimeUntilMidnight]);
+  }, []);
 
   const handleInput = useCallback((char: string) => {
     if (MACEDONIAN_ALPHABET.includes(char)) {
@@ -432,7 +413,6 @@ const App: React.FC = () => {
     if (!puzzle) return;
 
     const dateStr = getFormattedDisplayDate(true);
-    const currentRank = calculateRank(score, totalPossibleScoreRef.current);
 
     const shareText = `🐝 Македонска пчелка
 ${dateStr}
@@ -465,7 +445,7 @@ https://pcelka.mk`;
         showToast("Неуспешно копирање", true);
       }
     }
-  }, [puzzle, score, foundWords.length, showToast]);
+  }, [puzzle, score, foundWords.length, showToast, currentRank]);
 
   const handleShuffle = useCallback(() => {
     if (!puzzle || isShuffling) return;
@@ -673,7 +653,7 @@ https://pcelka.mk`;
           {showFoundWords && (
             <div className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 overflow-y-auto max-h-48 p-4 bg-white rounded-xl border-2 border-gray-100 shadow-sm animate-in fade-in zoom-in-95">
               <FoundWordsList
-                words={foundWords}
+                words={sortedFoundWords}
                 pangrams={puzzle?.pangrams || []}
                 isMobile={true}
               />
@@ -770,7 +750,7 @@ https://pcelka.mk`;
             {foundWords.length > 0 ? (
               <div className="flex flex-col">
                 <FoundWordsList
-                  words={foundWords}
+                  words={sortedFoundWords}
                   pangrams={puzzle?.pangrams || []}
                   isMobile={false}
                 />
@@ -793,8 +773,8 @@ https://pcelka.mk`;
         stats={stats}
         todayScore={score}
         todayWords={foundWords.length}
-        todayRank={calculateRank(score, totalPossibleScoreRef.current)}
-        todayPangrams={puzzle ? foundWords.filter(w => puzzle.pangrams.includes(w)).length : 0}
+        todayRank={currentRank}
+        todayPangrams={todayPangrams}
       />
 
       <AboutModal

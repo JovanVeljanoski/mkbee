@@ -23,23 +23,6 @@ export const COLORS = {
   darkGray: '#333333',
 };
 
-// Words with EXACTLY 7 unique letters to use as puzzle starters (Center + 6 Outer)
-export const PANGRAM_SEEDS = [
-  "ДРУШТВО", // Д, Р, У, Ш, Т, В, О
-  "ПРАЗНИК", // П, Р, А, З, Н, И, К
-  "ЗБОРНИК", // З, Б, О, Р, Н, И, К
-  "ПОЗДРАВ", // П, О, З, Д, Р, А, В
-  "СТРАНЕЦ", // С, Т, Р, А, Н, Е, Ц
-  "ГРАДОВИ", // Г, Р, А, Д, О, В, И
-  "ДОБРИНА", // Д, О, Б, Р, И, Н, А
-  "ПРЕВОДИ", // П, Р, Е, В, О, Д, И
-  "МОДЕРНИ", // М, О, Д, Е, Р, Н, И
-  "ИЗБОРНА", // И, З, Б, О, Р, Н, А
-  "ТВОРЕЦА", // Т, В, О, Р, Е, Ц, А
-  "СЛИКАР",  // С, Л, И, К, А, Р (Need 7) -> СЛИКАРО (S,L,I,K,A,R,O)
-  "КОМПЈУТ"  // Artificial for K,O,M,P,J,U,T ? No, stick to real words.
-];
-
 // Curated subset of Macedonian dictionary (Simplified for demo, can be expanded)
 export const MACEDONIAN_DICTIONARY = [
   "АЈДЕ", "БАБА", "БОЈА", "БОРБА", "ВЕРА", "ВОДА", "ВРАТА", "ГРАД", "ДЕНЕС", "ДЕТЕ",

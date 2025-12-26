@@ -42,7 +42,7 @@ const Hive: React.FC<HiveProps> = ({ centerLetter, outerLetters, onLetterClick, 
           const pos = getPosition(angles[index]);
           return (
             <div
-              key={index}
+              key={letter}
               className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10"
               style={{
                 transform: `translate(calc(-50% + ${pos.x}px), calc(-50% + ${pos.y}px))`
@@ -57,4 +57,4 @@ const Hive: React.FC<HiveProps> = ({ centerLetter, outerLetters, onLetterClick, 
   );
 };
 
-export default Hive;
+export default React.memo(Hive);
