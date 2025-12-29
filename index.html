@@ -29,69 +29,7 @@
     <meta property="twitter:description" content="Македонска верзија на популарната игра Spelling Bee. Составувајте зборови од буквите во саќето!">
     <meta property="twitter:image" content="https://jovanveljanoski.github.io/mkbee/bee.png">
 
-    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Roboto+Slab:wght@700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-          /* Tailwind yellow-300: #fde047; yellow-400: #facc15 */
-          --color-pulse: 253, 224, 71; /* yellow-300 equivalent */
-        }
-        body {
-            font-family: 'Nunito', sans-serif;
-            -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
-            overscroll-behavior: none;
-        }
-        .font-slab {
-            font-family: 'Roboto Slab', serif;
-        }
-        .hexagon {
-            /* Flat-topped hexagon polygon */
-            clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
-        }
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
-        .shake {
-            animation: shake 0.2s ease-in-out 0s 2;
-        }
-        @keyframes gentlePulse {
-            0%, 100% {
-                background-color: rgba(var(--color-pulse), 0);
-                box-shadow: 0 0 0 0 rgba(var(--color-pulse), 0);
-            }
-            50% {
-                background-color: rgba(var(--color-pulse), 0.5);
-                box-shadow: 0 0 0 8px rgba(var(--color-pulse), 0);
-            }
-        }
-        @keyframes timerPulse {
-            0% {
-                transform: scale(1);
-                box-shadow: 0 0 0 0 rgba(var(--color-pulse), 0.7);
-            }
-            50% {
-                transform: scale(1.1);
-                box-shadow: 0 0 0 10px rgba(var(--color-pulse), 0);
-            }
-            100% {
-                transform: scale(1);
-                box-shadow: 0 0 0 0 rgba(var(--color-pulse), 0);
-            }
-        }
-        @keyframes floatUp {
-            0% {
-                opacity: 1;
-                transform: translateY(0);
-            }
-            100% {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-        }
-    </style>
 </head>
 <body class="bg-white text-gray-900">
     <div id="root"></div>
