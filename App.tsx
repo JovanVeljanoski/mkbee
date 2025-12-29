@@ -664,7 +664,7 @@ https://pcelka.mk`;
         <div className="flex-1 flex flex-col items-center justify-center md:min-h-[400px]">
           <div className="relative w-full flex items-center justify-center mb-0 min-h-[48px] md:min-h-[60px]">
             {message && (
-              <div className="absolute -top-14 z-50 bg-black text-white px-5 py-3 rounded-lg shadow-2xl font-bold text-base transform transition-all animate-in fade-in slide-in-from-top-2">
+              <div className="absolute -top-14 z-50 bg-black text-white px-5 py-3 rounded-lg shadow-2xl font-bold text-base transition-all animate-in fade-in slide-in-from-top-2">
                 {message}
               </div>
             )}
