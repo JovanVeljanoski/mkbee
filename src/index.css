@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 /* Custom CSS Variables */
 :root {
@@ -17,19 +15,17 @@ body {
 }
 
 /* Custom utility classes */
-@layer utilities {
-  .font-slab {
-    font-family: 'Roboto Slab', serif;
-  }
+@utility font-slab {
+  font-family: 'Roboto Slab', serif;
+}
 
-  .hexagon {
-    /* Flat-topped hexagon polygon */
-    clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
-  }
+@utility hexagon {
+  /* Flat-topped hexagon polygon */
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+}
 
-  .shake {
-    animation: shake 0.2s ease-in-out 0s 2;
-  }
+@utility shake {
+  animation: shake 0.2s ease-in-out 0s 2;
 }
 
 /* Keyframe animations */

@@ -30,10 +30,10 @@ const Hive: React.FC<HiveProps> = ({ centerLetter, outerLetters, onLetterClick, 
   return (
     <div className="flex items-center justify-center py-0 md:py-8">
       {/* Container scales the entire precise grid to fit screens */}
-      <div className="relative w-[280px] h-[260px] transform scale-[0.80] md:scale-100 transition-transform origin-center">
+      <div className="relative w-[280px] h-[260px] scale-[0.80] md:scale-100 transition-transform origin-center">
 
         {/* Center Hexagon */}
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
           <Hexagon letter={centerLetter} isCenter onClick={onLetterClick} disabled={disabled} />
         </div>
 
@@ -43,8 +43,10 @@ const Hive: React.FC<HiveProps> = ({ centerLetter, outerLetters, onLetterClick, 
           return (
             <div
               key={letter}
-              className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10"
+              className="absolute z-10"
               style={{
+                top: '50%',
+                left: '50%',
                 transform: `translate(calc(-50% + ${pos.x}px), calc(-50% + ${pos.y}px))`
               }}
             >
