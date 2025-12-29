@@ -684,7 +684,7 @@ https://pcelka.mk`;
               <Hive
                 centerLetter={puzzle.centerLetter}
                 outerLetters={puzzle.outerLetters}
-                onLetterClick={(char) => handleInput(char)}
+                onLetterClick={handleInput}
                 isShuffling={isShuffling}
                 disabled={isGameOver}
               />

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { COLORS } from '../constants';
 
 // Hexagon dimensions
@@ -15,11 +15,11 @@ interface HexagonProps {
 }
 
 const Hexagon: React.FC<HexagonProps> = ({ letter, isCenter, onClick, className = "", isShuffling, disabled }) => {
-  const handleClick = () => {
+  const handleClick = useCallback(() => {
     if (!disabled) {
       onClick(letter);
     }
-  };
+  }, [disabled, onClick, letter]);
 
   return (
     <button
