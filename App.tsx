@@ -563,7 +563,7 @@ https://pcelka.mk`;
             <p className="font-extrabold text-lg text-black">
               {getFormattedDisplayDate(true)}
             </p>
-            <p className="text-sm font-bold text-black">Едитор: Јован</p>
+            <p className="text-sm font-bold text-black">Едитор: <a href="https://www.linkedin.com/in/jovanvel/" target="_blank" rel="noopener noreferrer" className="text-black no-underline hover:no-underline">Јован</a></p>
           </div>
         </div>
       </div>
