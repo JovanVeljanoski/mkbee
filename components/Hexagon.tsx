@@ -27,7 +27,7 @@ const Hexagon: React.FC<HexagonProps> = ({ letter, isCenter, onClick, className 
       onClick={handleClick}
       disabled={disabled}
       aria-label={`Буква ${letter}`}
-      className={`relative group select-none transition-transform border-0 bg-transparent p-0 ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer active:scale-95'} ${className}`}
+      className={`relative group select-none transition-transform border-0 bg-transparent p-0 touch-manipulation ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer active:scale-95'} ${className}`}
       style={{
         width: `${HEXAGON_WIDTH}px`,
         height: `${HEXAGON_HEIGHT}px`,

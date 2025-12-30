@@ -34,6 +34,7 @@ const SHUFFLE_DELAY_MS = 200;
 const ALL_WORDS_TOAST_DURATION_MS = 5000;
 const ALL_WORDS_CELEBRATION_MS = 3000;
 const COMPLETE_CELEBRATION_DELAY_MS = 500;
+const LONG_PRESS_DURATION_MS = 500;
 
 const App: React.FC = () => {
   const [puzzle, setPuzzle] = useState<PuzzleData | null>(null);
@@ -66,6 +67,8 @@ const App: React.FC = () => {
   const toastTimeoutRef = useRef<number | null>(null);
   const shakeTimeoutRef = useRef<number | null>(null);
   const clearInputTimeoutRef = useRef<number | null>(null);
+  const deleteLongPressRef = useRef<number | null>(null);
+  const deleteLongPressTriggeredRef = useRef(false);
 
   // Memoize sorted words for mobile display
   const sortedFoundWords = useMemo(() =>
@@ -299,6 +302,37 @@ const App: React.FC = () => {
   const handleDelete = useCallback(() => {
     setInput(prev => prev.slice(0, -1));
   }, []);
+
+  const handleDeleteAll = useCallback(() => {
+    setInput('');
+  }, []);
+
+  const handleDeletePressStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    // Prevent mouse events from firing on touch devices
+    if (e.type === 'touchstart') {
+      e.preventDefault();
+    }
+    deleteLongPressTriggeredRef.current = false;
+    deleteLongPressRef.current = window.setTimeout(() => {
+      deleteLongPressTriggeredRef.current = true;
+      handleDeleteAll();
+    }, LONG_PRESS_DURATION_MS);
+  }, [handleDeleteAll]);
+
+  const handleDeletePressEnd = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    // Prevent mouse events from firing on touch devices
+    if (e.type === 'touchend') {
+      e.preventDefault();
+    }
+    if (deleteLongPressRef.current) {
+      window.clearTimeout(deleteLongPressRef.current);
+      deleteLongPressRef.current = null;
+    }
+    // Only delete single letter if long press wasn't triggered
+    if (!deleteLongPressTriggeredRef.current) {
+      handleDelete();
+    }
+  }, [handleDelete]);
 
   // Toast function wrapped in useCallback - refs don't need to be in deps
   const showToast = useCallback((msg: string, shake = false, durationMs = TOAST_DURATION_MS) => {
@@ -581,7 +615,7 @@ https://pcelka.mk`;
   return (
     <div className="flex flex-col md:flex-row h-[100dvh] max-w-6xl mx-auto md:px-6 select-none overflow-hidden bg-white">
 
-      <div className="flex-1 flex flex-col px-4 py-2 md:py-6 h-full overflow-hidden md:overflow-y-auto overflow-x-hidden touch-none md:border-r md:border-gray-100 md:pr-8">
+      <div className="flex-1 flex flex-col px-4 py-2 md:py-6 h-full overflow-hidden md:overflow-y-auto overflow-x-hidden touch-none md:touch-auto md:border-r md:border-gray-100 md:pr-8" style={{ overscrollBehavior: 'none' }}>
         <header className="flex justify-between items-center mb-2 md:mb-6 border-b pb-2 md:pb-4">
           <div className="flex flex-col">
             <h1 className="text-2xl md:text-3xl font-slab font-bold tracking-tight text-gray-900">Македонска пчелка</h1>
@@ -595,7 +629,7 @@ https://pcelka.mk`;
                 <>
                   <button
                     onClick={() => setIsStatsOpen(true)}
-                    className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                    className="p-2 rounded-full hover:bg-gray-100 transition-colors touch-manipulation"
                     title="Статистика"
                     aria-label="Отвори статистика"
                     style={{
@@ -608,7 +642,7 @@ https://pcelka.mk`;
                   </button>
                   <button
                     onClick={handleShare}
-                    className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                    className="p-2 rounded-full hover:bg-gray-100 transition-colors touch-manipulation"
                     title="Сподели"
                     aria-label="Сподели резултат"
                   >
@@ -633,7 +667,7 @@ https://pcelka.mk`;
         <div className="mb-2 md:hidden w-full max-w-md mx-auto px-2">
           <div
             onClick={() => setShowFoundWords(!showFoundWords)}
-            className="cursor-pointer border-2 border-gray-100 rounded-xl px-4 py-2 flex justify-between items-center group bg-gray-50 min-h-[42px]"
+            className="cursor-pointer border-2 border-gray-100 rounded-xl px-4 py-2 flex justify-between items-center group bg-gray-50 min-h-[42px] touch-manipulation"
           >
             <div className="flex items-center gap-2 overflow-hidden">
               <span className="font-bold text-gray-600 text-xs truncate">
@@ -693,10 +727,19 @@ https://pcelka.mk`;
 
           <div className="flex gap-4 md:gap-6 mt-2 md:mt-6 w-full justify-center items-center">
             <button
-              onClick={handleDelete}
+              onMouseDown={handleDeletePressStart}
+              onMouseUp={handleDeletePressEnd}
+              onMouseLeave={() => {
+                if (deleteLongPressRef.current) {
+                  window.clearTimeout(deleteLongPressRef.current);
+                  deleteLongPressRef.current = null;
+                }
+              }}
+              onTouchStart={handleDeletePressStart}
+              onTouchEnd={handleDeletePressEnd}
               disabled={isGameOver}
-              aria-label="Избриши последна буква"
-              className="px-6 py-3 border-2 border-gray-200 rounded-full font-bold text-sm text-gray-800 hover:bg-gray-50 active:scale-95 transition-all w-28 text-center disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+              aria-label="Избриши последна буква (задржи за бришење на сè)"
+              className="px-6 py-3 border-2 border-gray-200 rounded-full font-bold text-sm text-gray-800 hover:bg-gray-50 active:scale-95 transition-all w-28 text-center disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 touch-manipulation"
             >
               Избриши
             </button>
@@ -705,7 +748,7 @@ https://pcelka.mk`;
               onClick={handleShuffle}
               disabled={isGameOver}
               aria-label="Промешај букви"
-              className="p-3 border-2 border-gray-200 rounded-full hover:bg-gray-50 active:scale-90 transition-all flex items-center justify-center w-12 h-12 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+              className="p-3 border-2 border-gray-200 rounded-full hover:bg-gray-50 active:scale-90 transition-all flex items-center justify-center w-12 h-12 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 touch-manipulation"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -716,7 +759,7 @@ https://pcelka.mk`;
               onClick={handleSubmit}
               disabled={!input || isGameOver}
               aria-label="Внеси збор"
-              className="px-6 py-3 border-2 border-gray-200 rounded-full font-bold text-sm text-gray-800 hover:bg-gray-50 active:scale-95 transition-all w-28 text-center disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+              className="px-6 py-3 border-2 border-gray-200 rounded-full font-bold text-sm text-gray-800 hover:bg-gray-50 active:scale-95 transition-all w-28 text-center disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 touch-manipulation"
             >
               Внеси
             </button>
@@ -726,7 +769,7 @@ https://pcelka.mk`;
             <button
               onClick={() => setIsAboutOpen(true)}
               aria-label="Отвори информации за играта"
-              className="px-6 py-3 border-2 border-gray-200 rounded-full font-bold text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 active:scale-95 transition-all w-40 text-center"
+              className="px-6 py-3 border-2 border-gray-200 rounded-full font-bold text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 active:scale-95 transition-all w-40 text-center touch-manipulation"
             >
               За играта
             </button>
