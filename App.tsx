@@ -62,7 +62,6 @@ const App: React.FC = () => {
   // Initialize with actual value to avoid placeholder flash
   const [nextPuzzleCountdown, setNextPuzzleCountdown] = useState<string>(() => getTimeUntilMidnightAmsterdam());
 
-  const totalPossibleScoreRef = useRef(0);
   const hasShownCelebrationRef = useRef(false);
   const toastTimeoutRef = useRef<number | null>(null);
   const shakeTimeoutRef = useRef<number | null>(null);
@@ -107,9 +106,7 @@ const App: React.FC = () => {
       const cappedWords = Math.min(MAX_WORDS_FOR_SCORING, totalWords);
       const cappedMaxScore = Math.round(cappedWords * avgScorePerWord);
 
-      // Store in state AND ref (ref for callbacks that may have stale closure)
       setTotalPossibleScore(cappedMaxScore);
-      totalPossibleScoreRef.current = cappedMaxScore;
 
       const todayStr = getAmsterdamDateString();
       const savedProgress = loadDailyProgress();
@@ -547,6 +544,19 @@ https://pcelka.mk`;
     return 'text-gray-300';
   };
 
+  // Handle Enter key on welcome screen to start game
+  useEffect(() => {
+    if (hasStarted || isLoading || isGameOver) return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        setHasStarted(true);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [hasStarted, isLoading, isGameOver]);
+
   if (!hasStarted) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#f7da21] text-black p-6 relative">
@@ -709,7 +719,7 @@ https://pcelka.mk`;
                   {char}
                 </span>
               ))}
-              <span className="w-1 h-8 md:h-14 bg-yellow-400 ml-1 animate-pulse"></span>
+              {!isGameOver && <span className="w-1 h-8 md:h-14 bg-yellow-400 ml-1 animate-pulse"></span>}
             </div>
           </div>
 
@@ -747,6 +757,7 @@ https://pcelka.mk`;
             <button
               onClick={handleShuffle}
               disabled={isGameOver}
+              tabIndex={-1}
               aria-label="Промешај букви"
               className="p-3 border-2 border-gray-200 rounded-full hover:bg-gray-50 active:scale-90 transition-all flex items-center justify-center w-12 h-12 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 touch-manipulation"
             >
@@ -823,6 +834,7 @@ https://pcelka.mk`;
       <AboutModal
         isOpen={isAboutOpen}
         onClose={() => setIsAboutOpen(false)}
+        isGameOver={isGameOver}
       />
 
       <CelebrationConfetti isActive={showCelebration} />

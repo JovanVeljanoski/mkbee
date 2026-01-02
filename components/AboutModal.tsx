@@ -4,22 +4,23 @@ import { getTimeUntilMidnightAmsterdam } from '../utils/dateUtils';
 interface AboutModalProps {
   isOpen: boolean;
   onClose: () => void;
+  isGameOver: boolean;
 }
 
-const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
+const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose, isGameOver }) => {
   // Initialize with actual value to avoid empty flash
   const [timeLeft, setTimeLeft] = useState<string>(() => getTimeUntilMidnightAmsterdam());
 
   useEffect(() => {
-    if (!isOpen) return;
+    // Only run timer when modal is open AND game is over (timer is displayed)
+    if (!isOpen || !isGameOver) return;
 
-    // Update timer every second when modal is open
     const timer = setInterval(() => {
       setTimeLeft(getTimeUntilMidnightAmsterdam());
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isOpen]);
+  }, [isOpen, isGameOver]);
 
   if (!isOpen) return null;
 
@@ -63,12 +64,14 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
              </ul>
           </div>
 
-          <div className="border-t pt-6 mt-6">
-             <p className="text-center font-bold text-gray-900 mb-2">Нареден предизвик за:</p>
-             <p className="text-center font-light text-4xl text-gray-400 font-mono tracking-wider">
-               {timeLeft}
-             </p>
-          </div>
+          {isGameOver && (
+            <div className="border-t pt-6 mt-6">
+               <p className="text-center font-bold text-gray-900 mb-2">Нареден предизвик за:</p>
+               <p className="text-center font-light text-4xl text-gray-400 font-mono tracking-wider">
+                 {timeLeft}
+               </p>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
