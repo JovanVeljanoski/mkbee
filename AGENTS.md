@@ -1,4 +1,4 @@
-# Cursor Rules for mkbee
+# Cursor Rules for aws
 
 ## Environment
 - Always use the mamba environment `mkbee` for both Python and Node.js (npm, npx, etc.) work

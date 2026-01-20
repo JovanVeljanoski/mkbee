@@ -25,8 +25,14 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose, isGameOver }) 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden relative animate-in zoom-in-95 duration-200">
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden relative animate-in zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
 
         {/* Header */}
         <div className="flex justify-between items-center px-6 py-4 border-b bg-gray-50">
@@ -42,7 +48,7 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose, isGameOver }) 
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6 text-gray-800">
+        <div className="p-6 space-y-4 text-gray-800">
           <p className="leading-relaxed">
             Ова е клон на популарната <a href="https://www.nytimes.com/puzzles/spelling-bee" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline font-semibold hover:text-blue-800">Spelling bee</a> игра на New York Times.
           </p>
@@ -51,37 +57,58 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose, isGameOver }) 
             Кодот на оваа игра е јавен и може да го видите <a href="https://github.com/JovanVeljanoski/mkbee" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline font-semibold hover:text-blue-800">овде</a>.
           </p>
 
-          {/* New Marketing Section - Simplified */}
+          {/* Other Word Games Section */}
           <div className="border-t pt-4 mt-2">
-             <p className="leading-relaxed mb-2">Оригинални проекти од истиот автор:</p>
+             <p className="leading-relaxed font-bold mb-2">Други игри со зборови:</p>
              <ul className="list-disc pl-5 space-y-1 text-gray-800">
                <li>
-                 Учете странски јазици со <a href="https://www.mylexilingo.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline font-semibold hover:text-blue-800">mylexilingo.com</a>.
+                 <a href="https://vafla.mk" target="_blank" rel="noopener noreferrer" className="text-green-600 font-semibold hover:text-green-800">вафла</a>
+               </li>
+             </ul>
+          </div>
+
+          {/* Original Projects Section */}
+          <div className="border-t pt-4 mt-2">
+             <p className="leading-relaxed font-bold mb-2">Оригинални проекти од истиот автор:</p>
+             <ul className="list-disc pl-5 space-y-1 text-gray-800">
+               <li>
+                 Учете странски јазици со <a href="https://www.mylexilingo.com" target="_blank" rel="noopener noreferrer" className="text-green-600 font-semibold hover:text-green-800">mylexilingo.com</a>
                </li>
                <li>
-                 Слушајте сказни за мали деца со <a href="https://storytime.mylexilingo.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline font-semibold hover:text-blue-800">storytime</a>.
+                 Слушајте сказни за мали деца со <a href="https://storytime.mylexilingo.com/" target="_blank" rel="noopener noreferrer" className="text-green-600 font-semibold hover:text-green-800">storytime</a>
                </li>
              </ul>
           </div>
 
           {isGameOver && (
-            <div className="border-t pt-6 mt-6">
-               <p className="text-center font-bold text-gray-900 mb-2">Нареден предизвик за:</p>
-               <p className="text-center font-light text-4xl text-gray-400 font-mono tracking-wider">
+            <div className="border-t pt-4 mt-2 flex items-center justify-center gap-2">
+               <p className="text-gray-600">Нареден предизвик за:</p>
+               <p className="font-medium text-gray-500 font-mono">
                  {timeLeft}
                </p>
             </div>
           )}
-        </div>
 
-        {/* Footer */}
-        <div className="bg-gray-50 px-6 py-4 text-center">
-           <button
-             onClick={onClose}
-             className="w-full py-3 bg-black text-white rounded-xl font-bold hover:bg-gray-800 transition-colors"
-           >
-             Затвори
-           </button>
+          {/* Support Section */}
+          <div className="border-t pt-4 mt-2">
+            <div className="bg-red-50 rounded-lg p-3 flex items-center justify-between">
+              <p className="font-bold text-gray-900 text-sm">
+                <span className="text-red-500 mr-1">❤️</span>
+                Поддржи го проектот
+              </p>
+              <a
+                href="https://buy.stripe.com/eVqdR9ahqebA4L09Ku08g03"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-500 text-white text-sm font-semibold rounded-md hover:bg-green-600 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                Донирај
+              </a>
+            </div>
+          </div>
         </div>
 
       </div>

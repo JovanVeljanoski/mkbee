@@ -576,7 +576,14 @@ https://pcelka.mk`;
 
           {isGameOver ? (
             <>
-              <div className="mt-10 flex flex-col items-center gap-2">
+              <button
+                onClick={() => setHasStarted(true)}
+                className="mt-6 px-8 py-3 bg-black text-white rounded-full font-bold text-base hover:bg-gray-800 active:scale-95 transition-all shadow-lg"
+              >
+                Погледни резултат
+              </button>
+
+              <div className="mt-5 flex flex-col items-center gap-2">
                 <span className="text-lg font-medium text-black/80">Нареден предизвик за</span>
                 <div className="flex items-center gap-3 px-8 py-4 bg-black/10 rounded-full">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-black/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -586,29 +593,32 @@ https://pcelka.mk`;
                   <span className="font-mono font-bold text-2xl text-black">{nextPuzzleCountdown}</span>
                 </div>
               </div>
-              <button
-                onClick={() => setHasStarted(true)}
-                className="mt-4 px-8 py-3 bg-black text-white rounded-full font-bold text-base hover:bg-gray-800 active:scale-95 transition-all shadow-lg"
-              >
-                Погледни резултат
-              </button>
+
+              <div className="mt-5 text-center space-y-1">
+                <p className="font-extrabold text-lg text-black">
+                  {getFormattedDisplayDate(true)}
+                </p>
+                <p className="text-sm font-bold text-black">Едитор: <a href="https://www.linkedin.com/in/jovanvel/" target="_blank" rel="noopener noreferrer" className="text-black no-underline hover:no-underline">Јован</a></p>
+              </div>
             </>
           ) : (
-            <button
-              onClick={() => setHasStarted(true)}
-              disabled={isLoading}
-              className="mt-10 px-12 py-4 bg-black text-white rounded-full font-bold text-xl hover:bg-gray-800 active:scale-95 transition-all w-48 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? 'Вчитувам...' : 'Играј'}
-            </button>
-          )}
+            <>
+              <button
+                onClick={() => setHasStarted(true)}
+                disabled={isLoading}
+                className="mt-10 px-12 py-4 bg-black text-white rounded-full font-bold text-xl hover:bg-gray-800 active:scale-95 transition-all w-48 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? 'Вчитувам...' : 'Играј'}
+              </button>
 
-          <div className="mt-12 text-center space-y-1">
-            <p className="font-extrabold text-lg text-black">
-              {getFormattedDisplayDate(true)}
-            </p>
-            <p className="text-sm font-bold text-black">Едитор: <a href="https://www.linkedin.com/in/jovanvel/" target="_blank" rel="noopener noreferrer" className="text-black no-underline hover:no-underline">Јован</a></p>
-          </div>
+              <div className="mt-12 text-center space-y-1">
+                <p className="font-extrabold text-lg text-black">
+                  {getFormattedDisplayDate(true)}
+                </p>
+                <p className="text-sm font-bold text-black">Едитор: <a href="https://www.linkedin.com/in/jovanvel/" target="_blank" rel="noopener noreferrer" className="text-black no-underline hover:no-underline">Јован</a></p>
+              </div>
+            </>
+          )}
         </div>
       </div>
     );
