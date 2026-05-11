@@ -7,6 +7,7 @@
 This project uses `conda`/`mamba` to manage both Python and Node.js environments.
 
 ### 1. Environment Installation
+
 To set up the environment, run:
 ```bash
 mamba env create -f environment.yaml
@@ -14,24 +15,28 @@ mamba activate mkbee
 ```
 
 ### 2. Project Installation
+
 Once the environment is active, install the Node dependencies:
 ```bash
 npm install
 ```
 
 ### 3. Running the App
+
 To start the development server:
 ```bash
 npm run dev
 ```
 
 ### 4. Running Tests
+
 To execute the unit tests:
 ```bash
 npm test
 ```
 
 ### 5. Linting
+
 To check the code for potential issues:
 ```bash
 npm run lint
@@ -48,6 +53,7 @@ The Macedonian dictionary used in this app has been sourced from [here](https://
 Contributions are welcome! If you have ideas for new features, UI improvements, or better word lists, feel free to open an issue or submit a pull request.
 
 Please follow best practices:
+
 - Ensure your code passes linting: `npm run lint`
 - Run existing tests before submitting: `npm test`
 - Keep components modular and follow the existing project structure.
