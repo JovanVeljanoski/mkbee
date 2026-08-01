@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getDailyPuzzle, calculateRank, seededRandom, shuffleArray } from './puzzleService';
+import { getDailyPuzzle, calculateRank, seededRandom, shuffleArray, scoreWord } from './puzzleService';
 import { GameRank } from '../types';
 
 describe('puzzleService', () => {
@@ -94,12 +94,23 @@ describe('puzzleService', () => {
     });
   });
 
+  describe('scoreWord', () => {
+    it('awards 1 point for 4-letter words', () => {
+      expect(scoreWord('АБВГ', [])).toBe(1);
+    });
+
+    it('awards points equal to word length for longer words', () => {
+      expect(scoreWord('АБВГД', [])).toBe(5);
+      expect(scoreWord('АБВГДЃЕЖЗ', [])).toBe(9);
+    });
+
+    it('adds a 7 point bonus for pangrams', () => {
+      const pangrams = ['АБВГДЃЕ'];
+      expect(scoreWord('АБВГДЃЕ', pangrams)).toBe(7 + 7);
+    });
+  });
+
   describe('getDailyPuzzle', () => {
-    // const mockDictionary = [ ... ]; // Unused
-
-    // For unit testing logic deeply, we might need to mock Date or dependency inject dictionary more flexibly.
-    // But we can test basic constraints.
-
     it('should throw if no pangrams exist', async () => {
       await expect(getDailyPuzzle(['APPLE', 'BANANA'])).rejects.toThrow("Dictionary must contain at least one word with 7 unique letters.");
     });

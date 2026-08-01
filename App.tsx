@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { PuzzleData } from './types';
-import { getDailyPuzzle, calculateRank } from './services/puzzleService';
+import { getDailyPuzzle, calculateRank, scoreWord } from './services/puzzleService';
 import { loadDictionary } from './services/dictionaryService';
 import {
   loadDailyProgress,
@@ -94,9 +94,7 @@ const App: React.FC = () => {
       // Calculate capped max score: avgScore * min(MAX_WORDS_FOR_SCORING, totalWords)
       let totalRawScore = 0;
       data.validWords.forEach(word => {
-        if (word.length === 4) totalRawScore += 1;
-        else if (word.length > 4) totalRawScore += word.length;
-        if (data.pangrams.includes(word)) totalRawScore += 7;
+        totalRawScore += scoreWord(word, data.pangrams);
       });
 
       const totalWords = data.validWords.length;
@@ -387,9 +385,8 @@ const App: React.FC = () => {
 
     if (puzzle.validWordsSet.has(currentInput)) {
       const willCompleteAllWords = foundWords.length + 1 === puzzle.validWords.length;
-      let points = currentInput.length === 4 ? 1 : currentInput.length;
       const isPangram = puzzle.pangrams.includes(currentInput);
-      if (isPangram) points += 7;
+      const points = scoreWord(currentInput, puzzle.pangrams);
 
       const SUCCESS_MESSAGES = ["браво", "одлично", "супер", "само напред", "тоа е тоа"];
       const randomMessage = SUCCESS_MESSAGES[Math.floor(Math.random() * SUCCESS_MESSAGES.length)];
