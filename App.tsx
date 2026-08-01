@@ -7,8 +7,7 @@ import {
   saveDailyProgress,
   clearDailyProgress,
   updateStatsWithDailyGame,
-  loadStats,
-  GameStats
+  loadStats
 } from './services/storageService';
 import { getAmsterdamDateString, getFormattedDisplayDate, getTimeUntilMidnightAmsterdam } from './utils/dateUtils';
 import Hive from './components/Hive';
@@ -50,7 +49,6 @@ const App: React.FC = () => {
   const [isShuffling, setIsShuffling] = useState<boolean>(false);
   const [isStatsOpen, setIsStatsOpen] = useState<boolean>(false);
   const [isAboutOpen, setIsAboutOpen] = useState<boolean>(false);
-  const [stats, setStats] = useState<GameStats>(loadStats());
   const [showCelebration, setShowCelebration] = useState<boolean>(false);
   const [totalPossibleScore, setTotalPossibleScore] = useState<number>(0);
 
@@ -173,14 +171,13 @@ const App: React.FC = () => {
     load();
   }, []);
 
-  // Persist progress whenever important state changes
+  // Persist progress whenever important state changes (timeLeft included so a
+  // reload mid-game restores the real remaining time, not a stale snapshot)
   useEffect(() => {
     if (!puzzle) return;
 
-    const todayStr = getAmsterdamDateString();
-
     saveDailyProgress({
-      date: todayStr,
+      date: getAmsterdamDateString(),
       foundWords,
       score,
       centerLetter: puzzle.centerLetter,
@@ -189,30 +186,28 @@ const App: React.FC = () => {
       isGameOver,
       hasTimerStarted
     });
+  }, [foundWords, score, puzzle, timeLeft, isGameOver, hasTimerStarted]);
+
+  // Update all-time stats in storage when game results change (not on timer ticks).
+  // No setState here — the modal reads fresh stats via the `stats` memo below.
+  useEffect(() => {
+    if (!puzzle) return;
+
+    const todayStr = getAmsterdamDateString();
 
     if (foundWords.length > 0) {
-      const newStats = updateStatsWithDailyGame(
-        todayStr,
-        score,
-        currentRank,
-        foundWords.length,
-        todayPangrams
-      );
-      setStats(newStats);
+      updateStatsWithDailyGame(todayStr, score, currentRank, foundWords.length, todayPangrams);
     } else if (isGameOver) {
       // Record game played even with 0 score
-      const newStats = updateStatsWithDailyGame(
-        todayStr,
-        score,
-        currentRank,
-        0,
-        0
-      );
-      setStats(newStats);
+      updateStatsWithDailyGame(todayStr, score, currentRank, 0, 0);
     }
+  }, [foundWords, score, puzzle, isGameOver, currentRank, todayPangrams]);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [foundWords, score, puzzle, isGameOver, hasTimerStarted, currentRank, todayPangrams]);
+  // All-time stats, re-read from storage when results change or the modal opens.
+  // loadStats reads localStorage (non-reactive), so the deps are intentional
+  // refresh triggers, not values used inside the memo.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const stats = useMemo(() => loadStats(), [isStatsOpen, foundWords, score, isGameOver]);
 
   // Timer pauses when about modal is open
   useEffect(() => {
