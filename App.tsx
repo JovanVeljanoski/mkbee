@@ -12,6 +12,8 @@ import {
   loadStats
 } from './services/storageService';
 import { getAmsterdamDateString, getFormattedDisplayDate, getTimeUntilMidnightAmsterdam } from './utils/dateUtils';
+import { copyToClipboard } from './utils/clipboard';
+import { mapToCyrillic } from './utils/keyboard';
 import Hive from './components/Hive';
 import ScoreBoard from './components/ScoreBoard';
 import StatsModal from './components/StatsModal';
@@ -19,6 +21,7 @@ import AboutModal from './components/AboutModal';
 import CelebrationConfetti from './components/CelebrationConfetti';
 import FoundWordsList from './components/FoundWordsList';
 import GameTimer from './components/GameTimer';
+import WelcomeScreen from './components/WelcomeScreen';
 import { MACEDONIAN_ALPHABET } from './constants';
 
 // Game timing constants
@@ -426,31 +429,6 @@ const App: React.FC = () => {
     }
   }, [puzzle, input, foundWords, hasTimerStarted, isGameOver, timeLeft, showToast]);
 
-  const copyToClipboard = async (text: string) => {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } else {
-      // Fallback for older browsers or non-secure contexts
-      const textArea = document.createElement("textarea");
-      textArea.value = text;
-      textArea.style.position = "fixed";
-      textArea.style.left = "-9999px";
-      textArea.style.top = "0";
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      try {
-        const successful = document.execCommand('copy');
-        document.body.removeChild(textArea);
-        return successful;
-      } catch {
-        document.body.removeChild(textArea);
-        return false;
-      }
-    }
-  };
-
   const handleShare = useCallback(async () => {
     if (!puzzle) return;
 
@@ -513,16 +491,6 @@ https://pcelka.mk`;
     }, SHUFFLE_DELAY_MS);
   }, [puzzle, isShuffling]);
 
-  const mapToCyrillic = (key: string): string => {
-    const map: {[key: string]: string} = {
-      'A': 'А', 'B': 'Б', 'V': 'В', 'G': 'Г', 'D': 'Д', 'K': 'К',
-      'E': 'Е', 'Z': 'З', 'I': 'И', 'J': 'Ј', 'L': 'Л', 'M': 'М',
-      'N': 'Н', 'O': 'О', 'P': 'П', 'R': 'Р', 'S': 'С', 'T': 'Т',
-      'U': 'У', 'F': 'Ф', 'H': 'Х', 'C': 'Ц'
-    };
-    return map[key] || key;
-  };
-
   useEffect(() => {
     if (!hasStarted || isGameOver) return;
 
@@ -570,68 +538,12 @@ https://pcelka.mk`;
 
   if (!hasStarted) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[#f7da21] text-black p-6 relative">
-        <div className="flex flex-col items-center max-w-md w-full text-center space-y-6 animate-in fade-in zoom-in duration-500">
-
-          <div className="w-28 h-28 md:w-36 md:h-36 relative mb-2">
-            <img src={`${import.meta.env.BASE_URL}bee.svg`} alt="Bee" className="w-full h-full drop-shadow-sm" />
-          </div>
-
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight font-slab text-black">
-            Македонска пчелка
-          </h1>
-
-          <p className="text-3xl md:text-4xl font-medium text-gray-900 leading-tight">
-            Колку зборови можеш да составиш со 7 букви?
-          </p>
-
-          {isGameOver ? (
-            <>
-              <button
-                onClick={() => setHasStarted(true)}
-                className="mt-6 px-8 py-3 bg-black text-white rounded-full font-bold text-base hover:bg-gray-800 active:scale-95 transition-all shadow-lg"
-              >
-                Погледни резултат
-              </button>
-
-              <div className="mt-5 flex flex-col items-center gap-2">
-                <span className="text-lg font-medium text-black/80">Нареден предизвик за</span>
-                <div className="flex items-center gap-3 px-8 py-4 bg-black/10 rounded-full">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-black/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <circle cx="12" cy="12" r="9" />
-                    <path strokeLinecap="round" d="M12 7v5l3 3" />
-                  </svg>
-                  <span className="font-mono font-bold text-2xl text-black">{nextPuzzleCountdown}</span>
-                </div>
-              </div>
-
-              <div className="mt-5 text-center space-y-1">
-                <p className="font-extrabold text-lg text-black">
-                  {getFormattedDisplayDate(true)}
-                </p>
-                <p className="text-sm font-bold text-black">Едитор: <a href="https://www.linkedin.com/in/jovanvel/" target="_blank" rel="noopener noreferrer" className="text-black no-underline hover:no-underline">Јован</a></p>
-              </div>
-            </>
-          ) : (
-            <>
-              <button
-                onClick={() => setHasStarted(true)}
-                disabled={isLoading}
-                className="mt-10 px-12 py-4 bg-black text-white rounded-full font-bold text-xl hover:bg-gray-800 active:scale-95 transition-all w-48 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? 'Вчитувам...' : 'Играј'}
-              </button>
-
-              <div className="mt-12 text-center space-y-1">
-                <p className="font-extrabold text-lg text-black">
-                  {getFormattedDisplayDate(true)}
-                </p>
-                <p className="text-sm font-bold text-black">Едитор: <a href="https://www.linkedin.com/in/jovanvel/" target="_blank" rel="noopener noreferrer" className="text-black no-underline hover:no-underline">Јован</a></p>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
+      <WelcomeScreen
+        isGameOver={isGameOver}
+        isLoading={isLoading}
+        nextPuzzleCountdown={nextPuzzleCountdown}
+        onStart={() => setHasStarted(true)}
+      />
     );
   }
 
