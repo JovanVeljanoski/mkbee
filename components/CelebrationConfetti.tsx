@@ -11,6 +11,7 @@ const CelebrationConfetti: React.FC<CelebrationConfettiProps> = ({ isActive }) =
 
     const durationMs = 3000;
     const end = Date.now() + durationMs;
+    let rafId: number;
 
     const frame = () => {
       confetti({
@@ -29,11 +30,12 @@ const CelebrationConfetti: React.FC<CelebrationConfettiProps> = ({ isActive }) =
       });
 
       if (Date.now() < end) {
-        requestAnimationFrame(frame);
+        rafId = requestAnimationFrame(frame);
       }
     };
 
     frame();
+    return () => cancelAnimationFrame(rafId);
   }, [isActive]);
 
   return null;
