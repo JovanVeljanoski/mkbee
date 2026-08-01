@@ -1,17 +1,37 @@
-import { describe, it, expect } from 'vitest';
-// import { render, screen } from '@testing-library/react';
-// import App from './App';
-
-// Mock child components that might use complex logic or context
-// to keep this test simple and focused on App rendering.
-// Ideally we mock the service calls too.
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import App from './App';
 
 describe('App Component', () => {
-  it('renders without crashing', () => {
-    // Basic smoke test
-    // Note: We might need to mock global fetch or other browser APIs if App uses them on mount
-    // For now, let's just assert true to ensure test infrastructure works
-    expect(true).toBe(true);
+  beforeEach(() => {
+    localStorage.clear();
+    // No network in tests: dictionary loading will fail gracefully and the app
+    // should fall back to showing the welcome screen without a puzzle.
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('no network in tests')));
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('renders the welcome screen without crashing', async () => {
+    render(<App />);
+    expect(
+      await screen.findByRole('heading', { name: 'Македонска пчелка' })
+    ).toBeInTheDocument();
+  });
+
+  it('navigates past the welcome screen when the play button is clicked', async () => {
+    render(<App />);
+
+    const playButton = await screen.findByRole('button', { name: /Играј|Вчитувам/ });
+    fireEvent.click(playButton);
+
+    // Without a loaded puzzle the main game layout still renders its header
+    const headers = await screen.findAllByText('Македонска пчелка');
+    expect(headers.length).toBeGreaterThan(0);
   });
 });
-
