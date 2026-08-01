@@ -7,7 +7,7 @@ from filter_and_export import selector
 def main():
     # Adjust path to the dictionary file
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    dict_path = os.path.join(script_dir, '..', 'data', 'mk_words.json')
+    dict_path = os.path.join(script_dir, '..', 'public', 'data', 'mk_words.json')
 
     if not os.path.exists(dict_path):
         print(f"Error: Dictionary not found at {dict_path}")
