@@ -7,6 +7,8 @@ import {
   saveDailyProgress,
   clearDailyProgress,
   updateStatsWithDailyGame,
+  loadDailyPuzzle,
+  saveDailyPuzzle,
   loadStats
 } from './services/storageService';
 import { getAmsterdamDateString, getFormattedDisplayDate, getTimeUntilMidnightAmsterdam } from './utils/dateUtils';
@@ -88,8 +90,16 @@ const App: React.FC = () => {
   const initGame = async () => {
     setIsLoading(true);
     try {
-      const dictionary = await loadDictionary();
-      const data = await getDailyPuzzle(dictionary);
+      const todayStr = getAmsterdamDateString();
+
+      // The daily puzzle is deterministic per date, so reuse a cached copy and
+      // skip loading/scanning the whole dictionary (~0.5-1s) on same-day reloads.
+      let data = loadDailyPuzzle(todayStr);
+      if (!data) {
+        const dictionary = await loadDictionary();
+        data = await getDailyPuzzle(dictionary);
+        saveDailyPuzzle(todayStr, data);
+      }
 
       // Calculate capped max score: avgScore * min(MAX_WORDS_FOR_SCORING, totalWords)
       let totalRawScore = 0;
@@ -104,7 +114,6 @@ const App: React.FC = () => {
 
       setTotalPossibleScore(cappedMaxScore);
 
-      const todayStr = getAmsterdamDateString();
       const savedProgress = loadDailyProgress();
 
       if (savedProgress) {
