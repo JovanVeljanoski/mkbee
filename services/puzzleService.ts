@@ -1,5 +1,5 @@
 import { PuzzleData, GameRank } from "../types";
-import { MACEDONIAN_DICTIONARY, RANKS } from "../constants";
+import { RANKS } from "../constants";
 import { getAmsterdamDateString } from "../utils/dateUtils";
 
 // Simple seeded random function
@@ -25,21 +25,21 @@ export function shuffleArray<T>(array: T[], rng: () => number): T[] {
   return arr;
 }
 
-export async function getDailyPuzzle(dictionaryWords: string[] = MACEDONIAN_DICTIONARY): Promise<PuzzleData> {
+export async function getDailyPuzzle(dictionaryWords: string[]): Promise<PuzzleData> {
   const amsterdamDate = getAmsterdamDateString();
   const rng = seededRandom(amsterdamDate);
 
-  // 2. Find all pangrams (words with exactly 7 unique letters)
-  const allPangrams = dictionaryWords.filter(word => {
-    const uniqueLetters = new Set(word.toUpperCase());
-    return uniqueLetters.size === 7;
-  });
+  // 2. Find all pangrams (words with exactly 7 unique letters).
+  // Words shorter than 7 chars can't qualify, so skip the Set allocation for them.
+  const allPangrams: string[] = [];
+  for (const word of dictionaryWords) {
+    if (word.length < 7) continue;
+    if (new Set(word.toUpperCase()).size === 7) {
+      allPangrams.push(word);
+    }
+  }
 
   if (allPangrams.length === 0) {
-    console.error("No pangrams found in dictionary! Falling back to default.");
-    // Fallback if no pangrams exist (should ideally not happen with a good dictionary)
-    // For safety, we can return a default seed or try random generation (old method)
-    // But let's assume we have at least one pangram or fail gracefully.
     throw new Error("Dictionary must contain at least one word with 7 unique letters.");
   }
 
@@ -62,7 +62,6 @@ export async function getDailyPuzzle(dictionaryWords: string[] = MACEDONIAN_DICT
   );
 
   // 6. Filter dictionary for valid words
-  const validWords: string[] = [];
   const validWordsSet = new Set<string>();
   const pangrams: string[] = [];
 
@@ -75,7 +74,7 @@ export async function getDailyPuzzle(dictionaryWords: string[] = MACEDONIAN_DICT
 
     // Check if word only uses allowed letters
     let valid = true;
-    const wordUniqueLetters = new Set();
+    const wordUniqueLetters = new Set<string>();
     for (const char of w) {
       if (!letterSet.has(char)) {
         valid = false;
@@ -85,7 +84,6 @@ export async function getDailyPuzzle(dictionaryWords: string[] = MACEDONIAN_DICT
     }
 
     if (valid) {
-      validWords.push(w);
       validWordsSet.add(w);
       if (wordUniqueLetters.size === 7) {
         pangrams.push(w);
@@ -96,7 +94,7 @@ export async function getDailyPuzzle(dictionaryWords: string[] = MACEDONIAN_DICT
   return {
     centerLetter,
     outerLetters,
-    validWords: Array.from(new Set(validWords)), // Just in case dictionary has dupes
+    validWords: Array.from(validWordsSet),
     validWordsSet: validWordsSet,
     pangrams: Array.from(new Set(pangrams))
   };

@@ -1,8 +1,9 @@
-import { GameRank } from "../types";
+import { GameRank, PuzzleData } from "../types";
 
 // KEY CONSTANTS
 const KEYS = {
   DAILY_PROGRESS: 'mkbee_daily_progress',
+  DAILY_PUZZLE: 'mkbee_daily_puzzle',
   STATS: 'mkbee_stats',
   LAST_PLAYED: 'mkbee_last_played'
 };
@@ -14,7 +15,7 @@ export interface DailyProgress {
   score: number;
   centerLetter: string;      // For validation
   outerLetters: string[];    // For validation
-  timeLeft: number;          // Seconds remaining (0-90)
+  timeLeft: number;          // Seconds remaining (0-GAME_DURATION_SECONDS)
   isGameOver: boolean;       // True when timer has expired
   hasTimerStarted: boolean;  // True after first word is entered
 }
@@ -78,6 +79,57 @@ export function clearDailyProgress(): void {
     localStorage.removeItem(KEYS.DAILY_PROGRESS);
   } catch (error) {
     console.error("Failed to clear daily progress:", error);
+  }
+}
+
+// DAILY PUZZLE CACHE
+
+// Serializable form of PuzzleData (validWordsSet is rebuilt on load)
+interface CachedDailyPuzzle {
+  date: string;
+  centerLetter: string;
+  outerLetters: string[];
+  validWords: string[];
+  pangrams: string[];
+}
+
+/**
+ * Cache the generated puzzle for the given date. Puzzle generation scans the
+ * full dictionary (~0.5-1s), and the puzzle is deterministic per date, so
+ * caching it makes same-day reloads skip dictionary loading entirely.
+ */
+export function saveDailyPuzzle(date: string, puzzle: PuzzleData): void {
+  try {
+    const cached: CachedDailyPuzzle = {
+      date,
+      centerLetter: puzzle.centerLetter,
+      outerLetters: puzzle.outerLetters,
+      validWords: puzzle.validWords,
+      pangrams: puzzle.pangrams
+    };
+    localStorage.setItem(KEYS.DAILY_PUZZLE, JSON.stringify(cached));
+  } catch (error) {
+    console.error("Failed to cache daily puzzle:", error);
+  }
+}
+
+export function loadDailyPuzzle(date: string): PuzzleData | null {
+  try {
+    const stored = localStorage.getItem(KEYS.DAILY_PUZZLE);
+    if (!stored) return null;
+    const cached: CachedDailyPuzzle = JSON.parse(stored);
+    if (cached.date !== date) return null;
+    if (!cached.centerLetter || !Array.isArray(cached.outerLetters) || !Array.isArray(cached.validWords)) return null;
+    return {
+      centerLetter: cached.centerLetter,
+      outerLetters: cached.outerLetters,
+      validWords: cached.validWords,
+      validWordsSet: new Set(cached.validWords),
+      pangrams: cached.pangrams ?? []
+    };
+  } catch (error) {
+    console.error("Failed to load cached daily puzzle:", error);
+    return null;
   }
 }
 

@@ -6,6 +6,8 @@ import {
   saveDailyProgress,
   loadDailyProgress,
   clearDailyProgress,
+  saveDailyPuzzle,
+  loadDailyPuzzle,
   GameStats,
   DailyProgress
 } from './storageService';
@@ -198,6 +200,37 @@ describe('storageService', () => {
       const loaded = loadDailyProgress();
 
       expect(loaded).toBeNull();
+    });
+  });
+
+  describe('daily puzzle cache', () => {
+    const puzzle = {
+      centerLetter: 'А',
+      outerLetters: ['Б', 'В', 'Г', 'Д', 'Е', 'Ж'],
+      validWords: ['АБВГ', 'АБВГДЃЕ'],
+      validWordsSet: new Set(['АБВГ', 'АБВГДЃЕ']),
+      pangrams: ['АБВГДЃЕ']
+    };
+
+    it('should round-trip a cached puzzle and rebuild the word set', () => {
+      saveDailyPuzzle('2024-01-15', puzzle);
+      const loaded = loadDailyPuzzle('2024-01-15');
+
+      expect(loaded).not.toBeNull();
+      expect(loaded?.centerLetter).toBe('А');
+      expect(loaded?.outerLetters).toEqual(puzzle.outerLetters);
+      expect(loaded?.validWords).toEqual(puzzle.validWords);
+      expect(loaded?.pangrams).toEqual(puzzle.pangrams);
+      expect(loaded?.validWordsSet.has('АБВГДЃЕ')).toBe(true);
+    });
+
+    it('should return null for a different date', () => {
+      saveDailyPuzzle('2024-01-15', puzzle);
+      expect(loadDailyPuzzle('2024-01-16')).toBeNull();
+    });
+
+    it('should return null when no puzzle is cached', () => {
+      expect(loadDailyPuzzle('2024-01-15')).toBeNull();
     });
   });
 });
