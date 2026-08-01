@@ -232,16 +232,26 @@ const App: React.FC = () => {
     return () => clearTimeout(timer);
   }, [timeBonus]);
 
-  // Clear input and UI state when game ends
-  useEffect(() => {
+  // Reset transient UI state when the game ends ("adjust state during render"
+  // pattern from the React docs — keeps this out of effects)
+  const [prevIsGameOver, setPrevIsGameOver] = useState(isGameOver);
+  if (isGameOver !== prevIsGameOver) {
+    setPrevIsGameOver(isGameOver);
     if (isGameOver) {
       setInput('');
-      // Clear any pending toast timeouts
+      setMessage('');
+      setIsShaking(false);
+      // Close About modal if open to avoid modal conflict with the stats modal
+      setIsAboutOpen(false);
+    }
+  }
+
+  // Clear any pending toast/shake timers when the game ends
+  useEffect(() => {
+    if (isGameOver) {
       if (toastTimeoutRef.current) window.clearTimeout(toastTimeoutRef.current);
       if (shakeTimeoutRef.current) window.clearTimeout(shakeTimeoutRef.current);
       if (clearInputTimeoutRef.current) window.clearTimeout(clearInputTimeoutRef.current);
-      setMessage('');
-      setIsShaking(false);
     }
   }, [isGameOver]);
 
@@ -249,9 +259,7 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!isGameOver || !puzzle) return;
 
-    // Close About modal if open to avoid modal conflict
-    setIsAboutOpen(false);
-
+    // About modal is closed via the isGameOver render-adjust block above
     if (score >= totalPossibleScore && totalPossibleScore > 0) {
       if (hasShownCelebrationRef.current) return;
       hasShownCelebrationRef.current = true;
