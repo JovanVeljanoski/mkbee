@@ -32,8 +32,10 @@ jobs:
         run: npm ci
       - name: Lint
         run: npm run lint
+      - name: Typecheck
+        run: npm run typecheck
       - name: Test
-        run: npm run test -- --run
+        run: npm run test
       # Production-like verification: ensure the build succeeds before merging
       - name: Build (production verification)
         run: npm run build
