@@ -115,7 +115,7 @@ const App: React.FC = () => {
         if (savedProgress.date === todayStr) {
           // Validate puzzle matches saved progress
           if (savedProgress.centerLetter === data.centerLetter &&
-              JSON.stringify(savedProgress.outerLetters.sort()) === JSON.stringify(data.outerLetters.sort())) {
+              JSON.stringify([...savedProgress.outerLetters].sort()) === JSON.stringify([...data.outerLetters].sort())) {
 
             setFoundWords(savedProgress.foundWords);
             setScore(savedProgress.score);
