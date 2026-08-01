@@ -102,6 +102,16 @@ export async function getDailyPuzzle(dictionaryWords: string[] = MACEDONIAN_DICT
   };
 }
 
+/**
+ * Points awarded for a found word: 1 for 4 letters, otherwise the word length,
+ * plus a 7 point bonus for pangrams.
+ */
+export function scoreWord(word: string, pangrams: string[]): number {
+  let points = word.length === 4 ? 1 : word.length;
+  if (pangrams.includes(word)) points += 7;
+  return points;
+}
+
 export function calculateRank(score: number, totalPossibleScore: number): GameRank {
   const safeTotal = totalPossibleScore || 100; // Prevent division by zero
 
