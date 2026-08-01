@@ -284,13 +284,15 @@ const App: React.FC = () => {
     }
   }, [isGameOver, puzzle, score, totalPossibleScore]);
 
-  // Update countdown timer every second
+  // Update countdown timer every second — only while it's actually visible
+  // (welcome/post-game screen), not during gameplay
   useEffect(() => {
+    if (hasStarted) return;
     const timer = setInterval(() => {
       setNextPuzzleCountdown(getTimeUntilMidnightAmsterdam());
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [hasStarted]);
 
   const handleInput = useCallback((char: string) => {
     if (MACEDONIAN_ALPHABET.includes(char)) {
