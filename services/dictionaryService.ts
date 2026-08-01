@@ -7,7 +7,6 @@ const IS_DEV = import.meta.env.DEV;
 
 interface DictionaryCache {
   version: number;
-  timestamp: number;
   words: string[];
 }
 
@@ -69,7 +68,6 @@ async function cacheDictionary(words: string[]): Promise<void> {
 
     const cache: DictionaryCache = {
       version: CURRENT_VERSION,
-      timestamp: Date.now(),
       words
     };
 
